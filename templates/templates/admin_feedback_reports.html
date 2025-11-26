@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios de Feedback - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Relatórios de Feedback</h1>
+    <p>Aqui você pode visualizar e responder aos feedbacks enviados pelos usuários.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if feedbacks %}
+        <div class="accordion" id="feedbackAccordion">
+            {% for feedback in feedbacks %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ feedback.id }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ feedback.id }}" aria-expanded="false" aria-controls="collapse{{ feedback.id }}">
+                        <span class="badge bg-{{ 'secondary' if feedback.status == 'pendente' else 'info' if feedback.status == 'em_analise' else 'success' if feedback.status == 'resolvido' else 'danger' }} me-2">{{ feedback.status|replace('_', ' ')|title }}</span>
+                        <strong>{{ feedback.subject }}</strong> <span class="ms-auto text-muted small">por {{ feedback.username }} em {{ feedback.timestamp.split(' ')[0] }}</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ feedback.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ feedback.id }}" data-bs-parent="#feedbackAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Tipo:</strong> {{ feedback.feedback_type|title }}</p>
+                        <p><strong>Descrição:</strong></p>
+                        <p style="white-space: pre-wrap;">{{ feedback.description }}</p>
+                        <hr>
+                        
+                        {% if feedback.admin_response %}
+                        <div class="alert alert-light">
+                            <h5>Resposta do Administrador</h5>
+                            <p><strong>Respondido por:</strong> {{ feedback.response_username }} em {{ feedback.response_timestamp }}</p>
+                            <p style="white-space: pre-wrap;">{{ feedback.admin_response }}</p>
+                        </div>
+                        {% endif %}
+
+                        <h5 class="mt-4">Responder ou Atualizar Status</h5>
+                        <form action="{{ url_for('update_feedback_report', feedback_id=feedback.id) }}" method="POST">
+                            <div class="mb-3">
+                                <label for="admin_response_{{ feedback.id }}" class="form-label">Sua Resposta</label>
+                                <textarea class="form-control" id="admin_response_{{ feedback.id }}" name="admin_response" rows="3" required>{{ feedback.admin_response or '' }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="status_{{ feedback.id }}" class="form-label">Alterar Status</label>
+                                <select class="form-select" id="status_{{ feedback.id }}" name="status" required>
+                                    <option value="pendente" {% if feedback.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                    <option value="em_analise" {% if feedback.status == 'em_analise' %}selected{% endif %}>Em Análise</option>
+                                    <option value="resolvido" {% if feedback.status == 'resolvido' %}selected{% endif %}>Resolvido</option>
+                                    <option value="rejeitado" {% if feedback.status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enviar Resposta</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">
+            <p class="mb-0">Nenhum feedback foi enviado até o momento.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

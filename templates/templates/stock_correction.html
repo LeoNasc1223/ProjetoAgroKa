@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Correção de Estoque{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Coluna para adicionar novo apontamento -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Apontar Divergência</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('stock_correction') }}" id="correction-form">
+                        <div class="mb-3">
+                            <label for="product-search-correction" class="form-label">1. Buscar Produto</label>
+                            <input type="text" class="form-control" id="product-search-correction" placeholder="Digite o código ou nome..." autocomplete="off">
+                            <div id="product-suggestions" class="list-group mt-1" style="position: absolute; z-index: 1000; width: calc(100% - 2rem);"></div>
+                            <input type="hidden" name="codigo_produto" id="codigo_produto_hidden" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estoque no Sistema</label>
+                            <input type="text" class="form-control" id="estoque_sistema_display" placeholder="Selecione um produto" readonly disabled>
+                        </div>
+                        <hr>
+                        <p class="fw-bold">2. Informar Contagem Física</p>
+                        <div class="mb-3">
+                            <label for="qtd_prateleira" class="form-label">Quantidade na Prateleira</label>
+                            <input type="number" class="form-control" id="qtd_prateleira" name="qtd_prateleira" required min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="qtd_estoque" class="form-label">Quantidade no Estoque (Depósito)</label>
+                            <input type="number" class="form-control" id="qtd_estoque" name="qtd_estoque" required min="0">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-2"></i>Salvar Apontamento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna para listar apontamentos pendentes -->
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-clipboard-list me-2"></i>Apontamentos Pendentes</h2>
+                {% if session.get('cargo') == 'Admin' and corrections %}
+                <a href="{{ url_for('export_stock_corrections') }}" target="_blank" class="btn btn-outline-secondary">
+                    <i class="fas fa-print me-2"></i>Exportar para Impressão
+                </a>
+                {% endif %}
+            </div>
+            <hr>
+            {% if corrections %}
+                {% for item in corrections %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.nome_produto }} <small class="text-muted">({{ item.codigo_produto }})</small></h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Estoque Sistema:</strong>
+                                <span class="badge bg-secondary">{{ item.estoque_sistema_registrado }}</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Total Contado:</strong>
+                                <span class="badge bg-primary">{{ item.total_contado }}</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Diferença:</strong>
+                                {% if item.diferenca > 0 %}
+                                    <span class="badge bg-success">+{{ item.diferenca }}</span>
+                                {% elif item.diferenca < 0 %}
+                                    <span class="badge bg-danger">{{ item.diferenca }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ item.diferenca }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted d-flex justify-content-between">
+                        <span>
+                            <i class="fas fa-user me-1"></i> Apontado por: <strong>{{ item.username }}</strong>
+                        </span>
+                        <span>
+                            <i class="fas fa-calendar-alt me-1"></i> {{ item.timestamp }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">Tudo Certo!</h4>
+                <p>Não há nenhuma divergência de estoque pendente de revisão no momento.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('product-search-correction');
+    const suggestionsDiv = document.getElementById('product-suggestions');
+    const hiddenCodeInput = document.getElementById('codigo_produto_hidden');
+    const stockDisplay = document.getElementById('estoque_sistema_display');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value;
+        hiddenCodeInput.value = '';
+        stockDisplay.value = 'Selecione um produto';
+
+        if (query.length < 2) {
+            suggestionsDiv.innerHTML = '';
+            return;
+        }
+
+        fetch(`{{ url_for('api_product_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                suggestionsDiv.innerHTML = '';
+                data.forEach(product => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = product.label;
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        searchInput.value = product.label;
+                        hiddenCodeInput.value = product.codigo;
+                        stockDisplay.value = product.estoque !== null ? product.estoque : 'Não disponível';
+                        suggestionsDiv.innerHTML = '';
+                    });
+                    suggestionsDiv.appendChild(item);
+                });
+            });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!suggestionsDiv.contains(e.target) && e.target !== searchInput) {
+            suggestionsDiv.innerHTML = '';
+        }
+    });
+});
+</script>
+{% endblock %}

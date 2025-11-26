@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Transferência de Estoque{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark">
+        <h2 class="h4 mb-0">Transferência de Estoque entre Lojas</h2>
+        <p class="mb-0 text-muted">Registre a movimentação de produtos entre a LOJA 1 e a LOJA 2.</p>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info" role="alert">
+            <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Funcionalidade em Desenvolvimento</h4>
+            <p>A interface de transferência está pronta, mas a lógica de backend que altera o estoque ainda não foi implementada. Isso requer uma atualização na estrutura do banco de dados para suportar múltiplos inventários por loja.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('transfer_stock') }}">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="codigo_produto" class="form-label">Código do Produto</label>
+                    <input type="text" class="form-control" id="codigo_produto" name="codigo_produto" required autofocus>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label for="nome_produto" class="form-label">Nome do Produto</label>
+                    <input type="text" class="form-control" id="nome_produto" readonly placeholder="Busque um código para preencher...">
+                </div>
+            </div>
+
+            <div id="product-info" class="alert alert-secondary d-none"></div>
+
+            <hr class="my-4">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="loja_origem" class="form-label">Loja de Origem</label>
+                    <select class="form-select" id="loja_origem" name="loja_origem" required>
+                        <option value="LOJA 1">LOJA 1</option>
+                        <option value="LOJA 2">LOJA 2</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="loja_destino" class="form-label">Loja de Destino</label>
+                    <select class="form-select" id="loja_destino" name="loja_destino" required>
+                        <option value="LOJA 1">LOJA 1</option>
+                        <option value="LOJA 2">LOJA 2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="quantidade" class="form-label">Quantidade a Transferir</label>
+                    <input type="number" class="form-control" id="quantidade" name="quantidade" required min="1">
+                    <div id="qty-alert" class="form-text text-danger d-none">A quantidade a transferir não pode ser maior que o estoque do sistema.</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="motivo" class="form-label">Motivo / Observação</label>
+                    <textarea class="form-control" id="motivo" name="motivo" rows="1"></textarea>
+                </div>
+            </div>
+            <div class="d-grid mt-3">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-exchange-alt me-2"></i>Registrar Transferência</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codigoInput = document.getElementById('codigo_produto');
+    const nomeProdutoInput = document.getElementById('nome_produto');
+    const productInfoDiv = document.getElementById('product-info');
+    const lojaOrigemSelect = document.getElementById('loja_origem');
+    const lojaDestinoSelect = document.getElementById('loja_destino');
+    const quantidadeInput = document.getElementById('quantidade');
+    const qtyAlert = document.getElementById('qty-alert');
+    let currentStock = 0;
+
+    codigoInput.addEventListener('blur', async function() {
+        const codigo = this.value.trim();
+        productInfoDiv.classList.add('d-none');
+        nomeProdutoInput.value = '';
+        currentStock = 0;
+
+        if (codigo) {
+            try {
+                const response = await fetch(`/get_product_name?codigo=${encodeURIComponent(codigo)}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Produto não encontrado');
+                
+                nomeProdutoInput.value = data.nome_produto;
+                currentStock = parseInt(data.estoque_sistema, 10) || 0;
+                productInfoDiv.innerHTML = `<strong>Estoque Total no Sistema:</strong> ${currentStock} unidades.`;
+                productInfoDiv.classList.remove('d-none');
+            } catch (error) {
+                productInfoDiv.innerHTML = `<strong>Erro:</strong> ${error.message}`;
+                productInfoDiv.classList.add('alert-danger');
+                productInfoDiv.classList.remove('d-none', 'alert-secondary');
+            }
+        }
+    });
+
+    function syncLojas() {
+        const origem = lojaOrigemSelect.value;
+        for (let option of lojaDestinoSelect.options) {
+            option.disabled = (option.value === origem);
+        }
+        if (lojaDestinoSelect.value === origem) {
+            lojaDestinoSelect.value = (origem === 'LOJA 1') ? 'LOJA 2' : 'LOJA 1';
+        }
+    }
+
+    function validateQuantity() {
+        const qty = parseInt(quantidadeInput.value, 10);
+        if (qty > currentStock) {
+            qtyAlert.classList.remove('d-none');
+            quantidadeInput.classList.add('is-invalid');
+        } else {
+            qtyAlert.classList.add('d-none');
+            quantidadeInput.classList.remove('is-invalid');
+        }
+    }
+
+    lojaOrigemSelect.addEventListener('change', syncLojas);
+    quantidadeInput.addEventListener('input', validateQuantity);
+
+    // Initial sync
+    syncLojas();
+});
+</script>
+{% endblock %}

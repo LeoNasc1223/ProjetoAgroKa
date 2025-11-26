@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Revisar Vendas Pendentes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-clipboard-check me-2"></i>Revisão de Vendas Pendentes</h2>
+        {% if session.get('cargo') == 'Admin' %}
+        <a href="{{ url_for('dismissed_sales_log') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-history me-2"></i>Ver Avisos Descartados
+        </a>
+        {% endif %}
+    </div>
+
+    {% if produtos %}
+    <form id="reviewSalesForm" method="POST" action="{{ url_for('review_sales') }}">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-center" style="width: 5%;"><input class="form-check-input" type="checkbox" id="selectAll" title="Selecionar Todos"></th>
+                                <th>Produto</th>
+                                <th class="text-center">Cód.</th>
+                                <th class="text-center">Est. Anterior</th>
+                                <th class="text-center">Est. Novo</th>
+                                <th class="text-center">Qtd. Vendida</th>
+                                <th class="text-center" style="width: 150px;">Qtd. Prateleira</th>
+                                <th class="text-center">Forçar Compra</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for produto in produtos %}
+                            <tr class="product-row">
+                                <td class="text-center"><input class="form-check-input produto-checkbox" type="checkbox" name="repor_produto" value="{{ produto[0] }}" aria-label="Selecionar {{ produto[1] }}"></td>
+                                <td>{{ produto[1] }}</td>
+                                <td class="text-center">{{ produto[0] }}</td>
+                                <td class="text-center">{{ produto[2] }}</td>
+                                <td class="text-center">{{ produto[3] }}</td>
+                                <td class="text-center text-danger fw-bold">{{ produto[4] }}</td>
+                                <td class="text-center">
+                                    <input type="number" name="qtd_prateleira_{{ produto[0] }}" class="form-control form-control-sm" min="0" aria-label="Quantidade na prateleira para {{ produto[1] }}">
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input" type="checkbox" name="forcar_compra_{{ produto[0] }}" id="forcar_compra_{{ produto[0] }}" aria-label="Forçar compra para {{ produto[1] }}">
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+            <button type="submit" name="action" value="process" class="btn btn-primary btn-lg">
+                <i class="fas fa-cogs me-2"></i> Processar Selecionados
+            </button>
+            <button type="submit" name="action" value="dismiss" class="btn btn-warning btn-lg">
+                <i class="fas fa-trash-alt me-2"></i> Descartar Selecionados
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">Tudo em ordem!</h4>
+        <p>Não há novas vendas pendentes para revisar no momento.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} <!-- Garante que os scripts do base.html sejam incluídos -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('reviewSalesForm');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.produto-checkbox');
+
+    // Função para atualizar o estado do checkbox "Selecionar Todos"
+    function updateSelectAllState() {
+        if (!selectAllCheckbox) return;
+        const allChecked = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
+        const someChecked = [...itemCheckboxes].some(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = !allChecked && someChecked;
+    }
+
+    // Função para habilitar/desabilitar os inputs da linha com base no checkbox
+    function toggleRowInputs(checkbox) {
+        const row = checkbox.closest('tr');
+        const quantityInput = row.querySelector('input[type="number"]');
+        const switchInput = row.querySelector('input[type="checkbox"].form-check-input:not(.produto-checkbox)');
+
+        const isDisabled = !checkbox.checked;
+        if (quantityInput) quantityInput.disabled = isDisabled;
+        if (switchInput) switchInput.disabled = isDisabled;
+
+        if (isDisabled) {
+            if (quantityInput) {
+                quantityInput.value = ''; // Limpa o valor se desmarcado
+                quantityInput.classList.remove('is-invalid'); // Remove a validação de erro
+            }
+            if (switchInput) switchInput.checked = false;
+        }
+    }
+
+    // Evento de clique no "Selecionar Todos"
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('click', function () {
+            itemCheckboxes.forEach(checkbox => {
+                if (checkbox.checked !== this.checked) {
+                    checkbox.checked = this.checked;
+                    toggleRowInputs(checkbox);
+                }
+            });
+            updateSelectAllState();
+        });
+    }
+
+    // Eventos para cada checkbox de item
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            toggleRowInputs(checkbox);
+            updateSelectAllState();
+        });
+        // Define o estado inicial dos inputs ao carregar a página
+        toggleRowInputs(checkbox);
+    });
+
+    // --- LÓGICA DE DEMONSTRAÇÃO ---
+
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-cogs me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const processSteps = [
+        {
+            title: "Passo 1: Coleta e Validação",
+            content: `
+                <p>Ao clicar em "Processar", o sistema primeiro identifica todos os produtos que você marcou na lista.</p>
+                <p>Para cada produto selecionado, ele realiza duas ações principais:</p>
+                <ul>
+                    <li><strong>Validação:</strong> Confere se o campo "Qtd. Prateleira" foi preenchido. Se não foi, a operação é interrompida com um aviso.</li>
+                    <li><strong>Coleta de Dados:</strong> O sistema coleta o código do produto, a quantidade vendida (da tabela) e a quantidade na prateleira que você informou.</li>
+                </ul>
+                <p>Esses dados são preparados para serem processados individualmente no próximo passo.</p>
+            `
+        },
+        {
+            title: "Passo 2: Análise de Estoque e Decisão",
+            content: `
+                <p>Para cada produto, o sistema executa a mesma lógica de análise da tela principal:</p>
+                <p class='text-center bg-dark p-2 rounded'><code>Backstock = (Estoque Total no Sistema) - (Qtd. na Prateleira)</code></p>
+                <p>Com base no resultado e nas opções marcadas, ele decide o destino da solicitação:</p>
+                <ul>
+                    <li><strong>Se "Forçar Compra" estiver marcado:</strong> A solicitação vai diretamente para a planilha de <strong>'COMPRAS'</strong>.</li>
+                    <li><strong>Se Backstock for suficiente:</strong> A solicitação vai para a planilha de <strong>'REPOSIÇÃO'</strong>.</li>
+                    <li><strong>Se Backstock for insuficiente:</strong> A solicitação vai para a planilha de <strong>'COMPRAS'</strong>.</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 3: Atualização das Planilhas e do Sistema",
+            content: `
+                <p>Finalmente, o sistema executa as atualizações:</p>
+                <ol>
+                    <li><strong>Interação com Google Sheets:</strong> Conecta-se à API do Google e adiciona uma nova linha na planilha apropriada ('REPOSIÇÃO' ou 'COMPRAS'), evitando duplicatas se já houver uma solicitação 'ABERTA' para o mesmo item.</li>
+                    <li><strong>Atualização do Banco de Dados Local:</strong> O status do aviso de venda para o produto é alterado de 'pendente' para 'processado'.</li>
+                </ol>
+                <p>Como resultado, o produto processado desaparece desta lista de revisão, indicando que a ação foi concluída.</p>
+            `
+        }
+    ];
+
+    const dismissSteps = [
+        {
+            title: "Passo 1: Identificação da Ação",
+            content: `
+                <p>A ação de "Descartar" é utilizada para remover avisos de venda que foram gerados por engano. Isso pode acontecer se um produto foi movido de lugar no sistema E-Trade, mas não efetivamente vendido.</p>
+                <p>Ao clicar no botão, o sistema identifica todos os produtos selecionados e prepara-se para alterar seu status interno, sem realizar nenhuma comunicação externa.</p>
+            `
+        },
+        {
+            title: "Passo 2: Atualização do Banco de Dados",
+            content: `
+                <p>Para cada produto selecionado, o sistema executa uma única atualização no banco de dados local:</p>
+                <ul>
+                    <li>O status do aviso de venda é alterado de <strong>'pendente'</strong> para <strong>'descartado'</strong>.</li>
+                </ul>
+                <p>Como resultado, o item não aparecerá mais nesta lista de pendências. Administradores podem visualizar e reverter essa ação na página <strong>'Ver Avisos Descartados'</strong>.</p>
+            `
+        }
+    ];
+
+    // Validação do formulário antes do envio
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            // Previne o envio real do formulário para que possamos controlar a ação e mostrar o modal.
+            event.preventDefault();
+
+            const submitter = event.submitter;
+
+            // Verifica se algum item foi selecionado
+            if (![...itemCheckboxes].some(cb => cb.checked)) {
+                alert('Por favor, selecione pelo menos um produto.');
+                return;
+            }
+
+            // Lógica para o botão "Descartar"
+            if (submitter && submitter.value === 'dismiss') {
+                showDemoModal(dismissSteps);
+                return;
+            }
+
+            // Lógica para o botão "Processar"
+            if (submitter && submitter.value === 'process') {
+                let isFormValid = true;
+                let firstInvalidInput = null;
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+                // Valida se a "Qtd. Prateleira" foi preenchida corretamente para cada item marcado
+                itemCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        const row = checkbox.closest('tr');
+                        const quantityInput = row.querySelector('input[type="number"]');
+                        if (quantityInput.value.trim() === '' || parseInt(quantityInput.value, 10) < 0) {
+                            isFormValid = false;
+                            quantityInput.classList.add('is-invalid');
+                            if (!firstInvalidInput) {
+                                firstInvalidInput = quantityInput;
+                            }
+                        }
+                    }
+                });
+
+                if (isFormValid) {
+                    // Se o formulário for válido, mostra o modal de demonstração.
+                    showDemoModal(processSteps);
+                } else {
+                    // Se for inválido, apenas foca no primeiro campo com erro.
+                    firstInvalidInput?.focus();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

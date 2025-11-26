@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Guia de Automação E-Trade{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-rocket me-2"></i>Guia de Automação: Atualizar Banco de Dados E-Trade</h3>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-4" style="height: 25px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ (step / total_steps) * 100 }}%;" aria-valuenow="{{ step }}" aria-valuemin="1" aria-valuemax="{{ total_steps }}">
+                            Passo {{ step }} de {{ total_steps }}
+                        </div>
+                    </div>
+
+                    <h4 class="card-title">{{ current_step.title }}</h4>
+                    <p class="card-text">{{ current_step.instruction }}</p>
+
+                    {% if is_last_step %}
+                        <hr>
+                        <div id="automation-status" class="mt-3">
+                            <button id="run-automation-btn" class="btn btn-lg btn-success w-100">
+                                <i class="fas fa-play-circle me-2"></i> Iniciar Automação Agora
+                            </button>
+                            <div id="loading-spinner" class="text-center mt-3" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Automação em andamento... Por favor, não mexa no mouse ou teclado e aguarde.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    {% if step > 1 %}
+                        <a href="{{ url_for('automation_guide', step=step-1) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Anterior
+                        </a>
+                    {% else %}
+                        <span></span> <!-- Placeholder to keep "Next" on the right -->
+                    {% endif %}
+
+                    {% if not is_last_step %}
+                        <a href="{{ url_for('automation_guide', step=step+1) }}" class="btn btn-primary">
+                            Próximo <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const runBtn = document.getElementById('run-automation-btn');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const automationStatusDiv = document.getElementById('automation-status');
+
+    if (runBtn) {
+        runBtn.addEventListener('click', function() {
+            runBtn.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+
+            fetch("{{ url_for('run_etrade_automation_route') }}", { method: 'POST' })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || `Erro do servidor: ${response.statusText}`) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+                automationStatusDiv.innerHTML = `<div class="alert alert-success" role="alert"><h4 class="alert-heading">Automação Iniciada!</h4><p>O processo de atualização foi iniciado. A data da "Última Atualização" na página inicial será atualizada ao final do processo.</p><hr><a href="{{ url_for('index') }}" class="btn btn-primary">Voltar para a Página Inicial</a></div>`;
+            })
+            .catch(error => {
+                loadingSpinner.style.display = 'none';
+                automationStatusDiv.innerHTML = `<div class="alert alert-danger" role="alert"><h4 class="alert-heading">Falha ao Iniciar!</h4><p>Ocorreu um erro: <strong>${error.message}</strong></p><p>Verifique se o E-Trade está aberto na máquina do servidor e tente novamente.</p><hr><button onclick="window.location.reload()" class="btn btn-warning">Tentar Novamente</button></div>`;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

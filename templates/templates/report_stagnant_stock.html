@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório de Estoque Parado{% endblock %}
+
+{% block head %}
+<style>
+    .card {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark>
+        <h2 class="h4 mb-0">Relatório de Produtos sem Movimentação (Estoque Parado)</h2>
+        <p class="mb-0 text-muted">Lista produtos com estoque que não tiveram vendas ou entradas no período definido.</p>
+    </div>
+    <div class="card-body">
+        <div class="p-3 mb-4 rounded" style="background-color: var(--bs-tertiary-bg);">
+            <form method="GET" action="{{ url_for('report_stagnant_stock') }}" class="mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="days_no_sales" class="form-label">Mostrar produtos parados há mais de:</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="days_no_sales" name="days_no_sales" value="{{ days_no_sales }}" min="1">
+                            <span class="input-group-text">dias</span>
+                        </div>
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt me-1"></i>Atualizar Relatório</button>
+                    </div>
+                </div>
+            </form>
+            <input type="text" id="stagnantStockSearch" class="form-control" placeholder="Filtrar por produto, código, marca...">
+        </div>
+
+        {% if stagnant_products %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Código</th>
+                        <th scope="col">Produto</th>
+                        <th scope="col" class="text-center">Estoque Sistema</th>
+                        <th scope="col">Preço</th>
+                        <th scope="col">Marca</th>
+                        <th scope="col">Classe</th>
+                    </tr>
+                </thead>
+                <tbody id="stagnantStockTableBody">
+                    {% for product in stagnant_products %}
+                    <tr>
+                        <td><a href="{{ url_for('product_detail', codigo_produto=product.codigo_produto) }}">{{ product.codigo_produto }}</a></td>
+                        <td>{{ product.nome_produto }}</td>
+                        <td class="text-center">{{ product.estoque_sistema }}</td>
+                        <td>R$ {{ "%.2f"|format(product.preco|float) if product.preco is not none else 'N/A' }}</td>
+                        <td>{{ product.marca or 'N/A' }}</td>
+                        <td>{{ product.classe or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-success text-center" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Nenhum produto com estoque parado encontrado para o período de {{ days_no_sales }} dias.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('stagnantStockSearch').addEventListener('keyup', function() {
+    let filter = this.value.toUpperCase();
+    let tableBody = document.getElementById('stagnantStockTableBody');
+    let rows = tableBody.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        let cells = rows[i].getElementsByTagName('td');
+        let found = false;
+        if (cells.length > 0) {
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j] && cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
