@@ -1,0 +1,212 @@
+/* static/css/style.css */
+
+/* 
+   ==========================================================================
+   Variáveis de Tema e Cores Globais
+   ==========================================================================
+*/
+:root {
+    --bs-primary: #0d6efd;
+    --bs-secondary: #6c757d;
+    --bs-success: #198754;
+    --bs-info: #0dcaf0;
+    --bs-warning: #ffc107;
+    --bs-danger: #dc3545;
+    --bs-light: #f8f9fa;
+    --bs-dark: #212529;
+    --bs-font-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --bs-body-bg: #f0f2f5; /* Fundo mais suave */
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 6px 16px rgba(0, 0,0, 0.12);
+    --card-border-radius: 0.5rem;
+    --transition-speed: 0.3s;
+}
+
+/* 
+   ==========================================================================
+   Estilos Globais e Animações
+   ==========================================================================
+*/
+body {
+    background-color: var(--bs-body-bg);
+    font-family: var(--bs-font-sans-serif);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 
+   ==========================================================================
+   Estilos de Componentes (Cards, Tabelas, Formulários)
+   ==========================================================================
+*/
+
+/* Estilo padrão para os cards */
+.card {
+    animation: fadeIn 0.5s ease-in-out;
+    border: none;
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--card-shadow);
+    transition: box-shadow var(--transition-speed) ease;
+}
+
+.card:hover {
+    box-shadow: var(--card-shadow-hover);
+}
+
+.card-header {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #fff;
+    border-top-left-radius: var(--card-border-radius);
+    border-top-right-radius: var(--card-border-radius);
+}
+
+/* Melhoria nas tabelas */
+.table-hover tbody tr {
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Estilo para a linha de ruptura de estoque */
+.table-hover tbody tr.table-danger:hover {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+/* Estilos para formulários */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Botões com um pouco mais de vida */
+.btn {
+    transition: all var(--transition-speed) ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Seções de busca */
+.search-section h5 {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--bs-dark);
+}
+
+/* 
+   ==========================================================================
+   Estilos Específicos de Página (Centralizados)
+   ==========================================================================
+*/
+
+/* review_sales.html */
+.check-cell {
+    width: 5%;
+    text-align: center;
+}
+.check-cell input[type="checkbox"] {
+    transform: scale(1.4);
+}
+.qty-input {
+    max-width: 100px;
+}
+
+/* stock_adjustment.html & transfer_stock.html */
+#product-details, #product-info {
+    transition: all var(--transition-speed) ease-in-out;
+}
+
+/* test_camera.html */
+#video {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .375rem;
+    background-color: #000;
+}
+
+/*
+   ==========================================================================
+   Modo Escuro (Dark Mode)
+   ==========================================================================
+*/
+[data-bs-theme="dark"] {
+    --bs-body-bg: #1a1a1a;
+    --bs-body-color: #e0e0e0;
+    --bs-border-color: #343a40;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #242424;
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .card-header,
+[data-bs-theme="dark"] .list-group-item {
+    background-color: #2a2a2a;
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: #242424;
+    --bs-table-striped-bg: #2a2a2a;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.15);
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: #2b2b2b;
+    color: var(--bs-body-color);
+    border-color: #444;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: #2b2b2b;
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .form-control[readonly] {
+    background-color: #333;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: #9a9a9a !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-light) !important;
+}
+
+/* Estilos para o modo de demonstração */
+.demo-info-icon {
+    cursor: pointer;
+    color: var(--bs-info);
+    margin-left: 8px;
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+}
+.demo-info-icon:hover {
+    transform: scale(1.2);
+}
