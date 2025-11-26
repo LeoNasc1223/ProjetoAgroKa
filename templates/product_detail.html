@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Produto - {{ product.nome_produto }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">{{ product.nome_produto }}</h2>
+                    <h5 class="text-muted">Código: {{ product.codigo_produto }}</h5>
+                </div>
+                <a href="{{ url_for('global_search') }}" class="btn btn-outline-secondary">Voltar para a Busca</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4><i class="fas fa-info-circle me-2"></i>Informações Gerais</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Preço:</strong> R$ {{ "%.2f"|format(product.preco|float) }}</li>
+                        <li class="list-group-item"><strong>Estoque no Sistema:</strong> <span class="badge bg-primary fs-6">{{ product.estoque_sistema }}</span> unidades</li>
+                        <li class="list-group-item"><strong>Marca:</strong> {{ product.marca or 'N/A' }}</li>
+                        <li class="list-group-item"><strong>Classe:</strong> {{ product.classe or 'N/A' }}</li>
+                        <li class="list-group-item"><strong>Código EAN:</strong> {{ product.codigo_ean or 'N/A' }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-chart-line me-2"></i>Análise de Estoque</h4>
+                     <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Dias de Estoque Restante:</strong> <span class="badge bg-info fs-6">{{ days_of_stock }}</span> (baseado em vendas dos últimos {{ sales_period_days }} dias)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lotes em Estoque -->
+    {% if lotes %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4><i class="fas fa-boxes me-2"></i>Lotes em Estoque</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Lote</th>
+                            <th>Quantidade</th>
+                            <th>Data de Validade</th>
+                            <th>Dias Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lote in lotes %}
+                        <tr>
+                            <td>{{ lote.numero_lote or 'N/A' }}</td>
+                            <td>{{ lote.quantidade }}</td>
+                            <td>{{ lote.data_validade or 'N/A' }}</td>
+                            <td>
+                                {% if lote.dias_restantes is not none %}
+                                    <span class="badge bg-{{ 'danger' if lote.dias_restantes < 30 else 'warning' if lote.dias_restantes < 90 else 'success' }}">
+                                        {{ lote.dias_restantes }} dias
+                                    </span>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Histórico de Vendas -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4><i class="fas fa-history me-2"></i>Histórico de Vendas (Últimos {{ sales_period_days }} dias)</h4>
+        </div>
+        <div class="card-body">
+            {% if sales_history %}
+                <canvas id="salesHistoryChart" style="min-height: 250px;"></canvas>
+            {% else %}
+                <p class="text-muted">Não há dados de vendas para este produto no período selecionado.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Ação Rápida: Registrar Estoque na Prateleira -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4><i class="fas fa-tasks me-2"></i>Ação Rápida</h4>
+        </div>
+        <div class="card-body">
+            <p>Use o botão abaixo para registrar a contagem de estoque na prateleira e solicitar reposição ou compra.</p>
+            <button id="toggleStockFormBtn" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i>Registrar Estoque na Prateleira</button>
+
+            <div id="stockFormContainer" class="mt-4" style="display: none;">
+                <form method="POST" action="{{ url_for('index') }}">
+                    <!-- Campos ocultos para enviar dados do produto -->
+                    <input type="hidden" name="codigo_produto" value="{{ product.codigo_produto }}">
+                    <input type="hidden" name="nome_produto" value="{{ product.nome_produto }}">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="qtd_prateleira" class="form-label fw-bold">Quantos produtos tem na prateleira?</label>
+                            <input type="number" class="form-control" id="qtd_prateleira" name="qtd_prateleira" placeholder="Ex: 5" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="qtd_para_abastecer" class="form-label fw-bold">Quantos produtos faltam para encher?</label>
+                            <input type="number" class="form-control" id="qtd_para_abastecer" name="qtd_para_abastecer" placeholder="Ex: 15" required>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3 p-3 border rounded bg-dark">
+                        <input class="form-check-input" type="checkbox" name="forcar_compra" id="forcar_compra" value="true">
+                        <label class="form-check-label" for="forcar_compra">
+                            <strong>Forçar Pedido de Compra</strong>
+                            <small class="d-block text-muted">Marque esta opção se o estoque de segurança (backstock) for insuficiente e a compra for urgente.</small>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane me-2"></i>Enviar Registro</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} <!-- Mantém os scripts do base.html -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lógica para o gráfico de histórico de vendas
+    const salesHistoryData = {{ sales_history|tojson }};
+    if (salesHistoryData && salesHistoryData.length > 0) {
+        const ctx = document.getElementById('salesHistoryChart').getContext('2d');
+
+        const labels = salesHistoryData.map(item => item.data_venda);
+        const data = salesHistoryData.map(item => item.quantidade_vendida);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Quantidade Vendida',
+                    data: data,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd/MM' } }, title: { display: true, text: 'Data da Venda' } },
+                    y: { beginAtZero: true, title: { display: true, text: 'Unidades Vendidas' }, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { title: (context) => new Date(context[0].label).toLocaleDateString('pt-BR') } }
+                }
+            }
+        });
+    }
+
+    // Lógica para exibir/ocultar o formulário de estoque
+    const toggleBtn = document.getElementById('toggleStockFormBtn');
+    const formContainer = document.getElementById('stockFormContainer');
+
+    if (toggleBtn && formContainer) {
+        toggleBtn.addEventListener('click', function() {
+            const isHidden = formContainer.style.display === 'none';
+            formContainer.style.display = isHidden ? 'block' : 'none';
+            toggleBtn.innerHTML = isHidden ? '<i class="fas fa-minus-circle me-2"></i>Ocultar Formulário' : '<i class="fas fa-plus-circle me-2"></i>Registrar Estoque na Prateleira';
+            toggleBtn.classList.toggle('btn-primary', !isHidden);
+            toggleBtn.classList.toggle('btn-secondary', isHidden);
+            if (isHidden) {
+                document.getElementById('qtd_prateleira').focus();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

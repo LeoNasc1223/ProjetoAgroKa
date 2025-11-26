@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Registrar Entrada de Estoque{% endblock %}
+
+{% block head %}
+<style>
+    .card {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark">
+        <h2 class="h4 mb-0">Registrar Entrada de Estoque (Lotes)</h2>
+        <p class="mb-0 text-muted">Adicione novas mercadorias ao estoque, atualizando o total e registrando o lote.</p>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('receive_stock') }}" id="receive-form">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="codigo_produto" class="form-label">Código do Produto</label>
+                    <input type="text" class="form-control" id="codigo_produto" name="codigo_produto" required autofocus>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label for="nome_produto" class="form-label">Nome do Produto</label>
+                    <input type="text" class="form-control" id="nome_produto" name="nome_produto" readonly placeholder="Será preenchido automaticamente...">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="quantidade" class="form-label">Quantidade Recebida</label>
+                    <input type="number" class="form-control" id="quantidade" name="quantidade" required min="1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="numero_lote" class="form-label">Número do Lote</label>
+                    <input type="text" class="form-control" id="numero_lote" name="numero_lote">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="data_validade" class="form-label">Data de Validade</label>
+                    <input type="date" class="form-control" id="data_validade" name="data_validade">
+                </div>
+            </div>
+            <div class="mt-3 d-grid">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-plus-circle me-2"></i>Registrar Entrada</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codigoInput = document.getElementById('codigo_produto');
+    const nomeProdutoInput = document.getElementById('nome_produto');
+
+    codigoInput.addEventListener('blur', function() { // Usar 'blur' é melhor que 'change' para este caso
+        const codigo = this.value.trim();
+        if (codigo) {
+            fetch(`/get_product_name?codigo=${encodeURIComponent(codigo)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        // Se a resposta não for OK (ex: 404), lê a mensagem de erro do JSON
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.nome_produto) {
+                        nomeProdutoInput.value = data.nome_produto;
+                    } else {
+                        nomeProdutoInput.value = 'Produto não encontrado.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    // Exibe a mensagem de erro do backend, se disponível
+                    nomeProdutoInput.value = error.error || 'Erro ao buscar produto.';
+                });
+        } else {
+            nomeProdutoInput.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}

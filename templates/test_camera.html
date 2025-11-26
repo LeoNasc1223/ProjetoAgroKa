@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Teste de Câmera{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark">
+        <h2 class="h4 mb-0">Teste de Acesso à Câmera</h2>
+        <p class="mb-0 text-muted">Verifique se o seu navegador e dispositivo permitem o acesso à câmera.</p>
+    </div>
+    <div class="card-body text-center">
+        <p>Esta página tenta acessar a câmera do seu dispositivo. Se funcionar, você verá a imagem da sua câmera abaixo. Se não, uma mensagem de erro será exibida.</p>
+        
+        <div id="status-alert" class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i>Aguardando...
+        </div>
+
+        <video id="video" autoplay playsinline></video>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('video');
+    const statusAlert = document.getElementById('status-alert');
+
+    function updateStatus(message, type = 'info') {
+        statusAlert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'danger' ? 'exclamation-triangle' : 'info-circle')} me-2"></i>${message}`;
+        statusAlert.className = `alert alert-${type}`;
+    }
+
+    if (window.location.protocol !== 'https:') {
+        updateStatus('ERRO: Acesso à câmera requer uma conexão segura (HTTPS).', 'danger');
+    } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        updateStatus('Solicitando permissão da câmera...', 'info');
+        
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function(stream) {
+                updateStatus('Câmera acessada com sucesso!', 'success');
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                let errorMessage = 'Erro ao acessar câmera: ' + err.name;
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMessage = "Acesso à câmera negado. Verifique as permissões do site no seu navegador.";
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMessage = "Nenhuma câmera foi encontrada no dispositivo.";
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMessage = "A câmera pode estar em uso por outro aplicativo ou houve um erro ao iniciá-la.";
+                }
+                updateStatus(errorMessage, 'danger');
+                console.error("Erro de câmera: ", err);
+            });
+    } else {
+        updateStatus('API da câmera (getUserMedia) não é suportada por este navegador.', 'danger');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Anotações de Produtos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Coluna para adicionar nova anotação -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Nova Anotação</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('notes') }}" id="note-form">
+                        <div class="mb-3">
+                            <label for="product-search-notes" class="form-label">Buscar Produto</label>
+                            <input type="text" class="form-control" id="product-search-notes" placeholder="Digite o código ou nome do produto..." autocomplete="off">
+                            <div id="product-suggestions" class="list-group mt-1" style="position: absolute; z-index: 1000; width: calc(100% - 2rem);"></div>
+                            <input type="hidden" name="codigo_produto" id="codigo_produto_hidden" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="anotacao" class="form-label">Sua Anotação</label>
+                            <textarea class="form-control" id="anotacao" name="anotacao" rows="5" required placeholder="Escreva aqui sua observação sobre o produto selecionado..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-2"></i>Salvar Anotação
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna para listar anotações existentes -->
+        <div class="col-md-8">
+            <h2><i class="fas fa-sticky-note me-2"></i>Minhas Anotações</h2>
+            <hr>
+            {% if notes %}
+                {% for note in notes %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ note.nome_produto }} <small class="text-muted">({{ note.codigo_produto }})</small></h5>
+                        <p class="card-text">{{ note.anotacao }}</p>
+                    </div>
+                    <div class="card-footer text-muted d-flex justify-content-between">
+                        <span>
+                            <i class="fas fa-calendar-alt me-1"></i> {{ note.timestamp }}
+                        </span>
+                        {% if session.get('cargo') == 'Admin' %}
+                        <span>
+                            <i class="fas fa-user me-1"></i> {{ note.username }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                Você ainda não tem nenhuma anotação. Use o formulário ao lado para criar sua primeira!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('product-search-notes');
+    const suggestionsDiv = document.getElementById('product-suggestions');
+    const hiddenCodeInput = document.getElementById('codigo_produto_hidden');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value;
+        hiddenCodeInput.value = ''; // Limpa o código se o usuário digitar novamente
+
+        if (query.length < 2) {
+            suggestionsDiv.innerHTML = '';
+            return;
+        }
+
+        fetch(`{{ url_for('api_product_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                suggestionsDiv.innerHTML = '';
+                data.forEach(product => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = product.label;
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        searchInput.value = product.label;
+                        hiddenCodeInput.value = product.codigo;
+                        suggestionsDiv.innerHTML = '';
+                    });
+                    suggestionsDiv.appendChild(item);
+                });
+            });
+    });
+
+    // Oculta sugestões se clicar fora
+    document.addEventListener('click', function(e) {
+        if (!suggestionsDiv.contains(e.target) && e.target !== searchInput) {
+            suggestionsDiv.innerHTML = '';
+        }
+    });
+});
+</script>
+{% endblock %}

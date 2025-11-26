@@ -1,0 +1,9 @@
+<!-- templates/server_log.html -->
+{% extends "base.html" %}
+{% block title %}Log do Servidor - Admin{% endblock %}
+{% block content %}
+    <h1>Log do Servidor</h1>
+    <pre style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">
+        {{ log_content }}
+    </pre>
+{% endblock %}
