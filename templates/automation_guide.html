@@ -60,30 +60,101 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO ---
+
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-rocket me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const automationSteps = [
+        {
+            title: "Passo 1: O Gatilho",
+            content: `
+                <p>Ao clicar em "Iniciar Automação", a aplicação web envia um comando para um <strong>agente local</strong>.</p>
+                <p>Este agente é um pequeno programa que roda na mesma máquina que o sistema E-Trade, aguardando instruções. Isso permite que a aplicação web, que está na nuvem, interaja com um software local.</p>
+            `
+        },
+        {
+            title: "Passo 2: Ação do Agente Local",
+            content: `
+                <p>O agente recebe o comando e inicia uma sequência de automação de interface gráfica (RPA):</p>
+                <ol>
+                    <li>Ele assume o controle do mouse e teclado.</li>
+                    <li>Navega pelos menus do E-Trade até a tela de "Produtos".</li>
+                    <li>Seleciona todos os produtos da lista (usando o atalho <strong>Ctrl+A</strong>).</li>
+                    <li>Copia todos os dados para a área de transferência (usando <strong>Ctrl+C</strong>).</li>
+                </ol>
+                <p class="text-center bg-dark p-2 rounded">Durante este processo, o usuário não deve mexer no computador.</p>
+            `
+        },
+        {
+            title: "Passo 3: Envio e Processamento dos Dados",
+            content: `
+                <p>Com os dados copiados, o agente os envia de volta para a aplicação web.</p>
+                <p>O servidor então realiza o processamento:</p>
+                <ul>
+                    <li><strong>Limpeza e Estruturação:</strong> Os dados brutos são limpos e organizados em um formato que o sistema entende.</li>
+                    <li><strong>Atualização do Banco de Dados:</strong> O sistema atualiza sua própria base de dados com as informações mais recentes de estoque e preço de cada produto.</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 4: Detecção de Vendas",
+            content: `
+                <p>Esta é a parte mais inteligente do processo. O sistema compara o <strong>estoque antigo</strong> (de antes da atualização) com o <strong>estoque novo</strong> para cada produto.</p>
+                <p class='text-center bg-dark p-2 rounded'><code>Se (Estoque Novo < Estoque Antigo) => Venda Detectada!</code></p>
+                <p>Para cada venda detectada, um novo registro é criado na tabela de "Vendas Pendentes", aguardando a revisão manual na tela seguinte.</p>
+            `
+        },
+        {
+            title: "Passo 5: Conclusão",
+            content: `
+                <p>Ao final de todo o processo, o sistema atualiza o campo "Última atualização" no dashboard com a data e hora atuais.</p>
+                <p>O número de vendas pendentes no botão "Revisar Vendas" (na página inicial) também é atualizado, indicando que há novas tarefas para o operador.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Botão com o Modal de Demonstração ---
     const runBtn = document.getElementById('run-automation-btn');
-    const loadingSpinner = document.getElementById('loading-spinner');
-    const automationStatusDiv = document.getElementById('automation-status');
-
     if (runBtn) {
-        runBtn.addEventListener('click', function() {
-            runBtn.style.display = 'none';
-            loadingSpinner.style.display = 'block';
-
-            fetch("{{ url_for('run_etrade_automation_route') }}", { method: 'POST' })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.message || `Erro do servidor: ${response.statusText}`) });
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSpinner.style.display = 'none';
-                automationStatusDiv.innerHTML = `<div class="alert alert-success" role="alert"><h4 class="alert-heading">Automação Iniciada!</h4><p>O processo de atualização foi iniciado. A data da "Última Atualização" na página inicial será atualizada ao final do processo.</p><hr><a href="{{ url_for('index') }}" class="btn btn-primary">Voltar para a Página Inicial</a></div>`;
-            })
-            .catch(error => {
-                loadingSpinner.style.display = 'none';
-                automationStatusDiv.innerHTML = `<div class="alert alert-danger" role="alert"><h4 class="alert-heading">Falha ao Iniciar!</h4><p>Ocorreu um erro: <strong>${error.message}</strong></p><p>Verifique se o E-Trade está aberto na máquina do servidor e tente novamente.</p><hr><button onclick="window.location.reload()" class="btn btn-warning">Tentar Novamente</button></div>`;
-            });
+        runBtn.addEventListener('click', function(event) {
+            event.preventDefault(); // Impede qualquer ação padrão do botão
+            showDemoModal(automationSteps);
         });
     }
 });
