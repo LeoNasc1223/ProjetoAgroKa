@@ -23,12 +23,9 @@ Quando saí da empresa, transformei em **versão demo para portfólio**:
 Ou seja: você está vendo **código real de produção**, só limpo e comentado.
 
 ## Funcionalidades que existiam na versão original
-- Interface web usada pelos funcionários no computador da loja
+- Automação no Computador da Agropecuária para atualizar o Banco de Dados do sistema
 - Sincronização automática com Google Sheets
-- Backup diário completo às 18h
-- Alertas de estoque baixo
-- Geração automática de relatórios PDF
-- Histórico completo de movimentações
+- Servidor que permitia ser usado em dispositivos móveis
 
 ## Como rodar a versão demo (local)
 ```bash
