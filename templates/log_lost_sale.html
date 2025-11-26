@@ -12,7 +12,7 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text text-muted">Use este formulário para registrar quando um cliente procurou um item mas não finalizou a compra.</p>
-                    <form method="POST" action="{{ url_for('log_lost_sale') }}">
+                    <form id="lostSaleForm" method="POST" action="{{ url_for('log_lost_sale') }}">
                         <div class="mb-3">
                             <label for="produto_interesse" class="form-label">Produto de Interesse</label>
                             <input type="text" class="form-control" id="produto_interesse" name="produto_interesse" required placeholder="Ex: Ração para cães, coleira, etc.">
@@ -35,4 +35,105 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO ---
+
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-chart-pie me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const lostSaleSteps = [
+        {
+            title: "Passo 1: Coleta de Dados Estratégicos",
+            content: `
+                <p>Ao clicar em "Salvar Registro", o sistema coleta as informações que você inseriu:</p>
+                <ul>
+                    <li><strong>Produto de Interesse:</strong> O que o cliente estava procurando.</li>
+                    <li><strong>Motivo da Não-Compra:</strong> A razão pela qual a venda não foi concluída (preço, falta de estoque, etc.).</li>
+                    <li><strong>Contato (Opcional):</strong> Informações para um futuro contato.</li>
+                </ul>
+                <p>Esses dados, embora simples, são extremamente valiosos para a inteligência de negócio.</p>
+            `
+        },
+        {
+            title: "Passo 2: Registro no Banco de Dados",
+            content: `
+                <p>As informações são salvas em uma tabela específica no banco de dados chamada <strong>'log_vendas_perdidas'</strong>.</p>
+                <p>Junto com os dados do formulário, o sistema também registra:</p>
+                <ul>
+                    <li>A <strong>data e hora</strong> do registro.</li>
+                    <li>O <strong>nome do usuário</strong> que fez o apontamento.</li>
+                    <li>A <strong>loja</strong> onde a venda foi perdida.</li>
+                </ul>
+                <p>Isso cria um histórico detalhado para análises futuras.</p>
+            `
+        },
+        {
+            title: "Passo 3: Análise e Tomada de Decisão",
+            content: `
+                <p>Os dados registrados alimentam diretamente o relatório de <strong>"Análise de Vendas Perdidas"</strong>, acessível pelos administradores.</p>
+                <p>Nesse relatório, a gestão pode visualizar gráficos e tabelas que respondem a perguntas importantes, como:</p>
+                <ul>
+                    <li>Quais são os principais motivos pelos quais estamos perdendo vendas?</li>
+                    <li>Quais produtos os clientes mais procuram e não levam?</li>
+                    <li>Existe uma demanda por produtos que não temos em estoque?</li>
+                </ul>
+                <p>Com base nessas informações, a empresa pode tomar decisões estratégicas, como ajustar preços, negociar com fornecedores ou adicionar novos itens ao portfólio de produtos.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Formulário com o Modal de Demonstração ---
+    const form = document.getElementById('lostSaleForm');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio real do formulário
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            showDemoModal(lostSaleSteps);
+        });
+    }
+});
+</script>
 {% endblock %}
