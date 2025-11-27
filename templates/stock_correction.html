@@ -8,8 +8,13 @@
         <!-- Coluna para adicionar novo apontamento -->
         <div class="col-md-4">
             <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Apontar Divergência</h4>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Apontar Divergência</h4>
+                    </div>
+                    <a href="#" id="correctionHelp" title="Como funciona esta página?">
+                        <i class="fas fa-question-circle fa-2x text-info"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('stock_correction') }}" id="correction-form">
@@ -53,6 +58,10 @@
             </div>
             <hr>
             {% if corrections %}
+                {# Dicionário para mapear nomes de usuário para nomes anônimos #}
+                {% set user_map = {} %}
+                {% set user_counter = {'value': 1} %}
+
                 {% for item in corrections %}
                 <div class="card mb-3">
                     <div class="card-body">
@@ -79,8 +88,17 @@
                         </div>
                     </div>
                     <div class="card-footer text-muted d-flex justify-content-between">
+                        {# Lógica para anonimizar o nome do usuário #}
+                        {% if item.username and item.username not in user_map %}
+                            {% if item.username|lower == 'adm' %}
+                                {% do user_map.update({item.username: 'Admin'}) %}
+                            {% else %}
+                                {% do user_map.update({item.username: 'Operador ' ~ user_counter.value}) %}
+                                {% do user_counter.update({'value': user_counter.value + 1}) %}
+                            {% endif %}
+                        {% endif %}
                         <span>
-                            <i class="fas fa-user me-1"></i> Apontado por: <strong>{{ item.username }}</strong>
+                            <i class="fas fa-user me-1"></i> Apontado por: <strong>{{ user_map.get(item.username, 'N/A') }}</strong>
                         </span>
                         <span>
                             <i class="fas fa-calendar-alt me-1"></i> {{ item.timestamp }}
@@ -101,6 +119,118 @@
 
 {% block scripts %}
 {{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    function showDemoModal(steps) {
+        const step = steps[0]; // Esta tela só tem um passo de explicação
+        demoModalLabel.innerHTML = `<i class="fas fa-question-circle me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+        demoModalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "O que é 'Apontar Divergência'?",
+            content: `
+                <p>Esta funcionalidade permite que qualquer operador reporte uma diferença entre o estoque físico (contado na prateleira e no depósito) e o que está registrado no sistema.</p>
+                <p>Ao salvar um apontamento, o sistema <strong>não altera o estoque automaticamente</strong>. Em vez disso, ele cria um registro na lista de 'Apontamentos Pendentes'.</p>
+                <h5>Fluxo de Trabalho:</h5>
+                <ol>
+                    <li>O operador conta o produto e registra a divergência aqui.</li>
+                    <li>O apontamento aparece na lista ao lado, visível para todos.</li>
+                    <li>Um <strong>administrador</strong> revisa a lista de pendências.</li>
+                    <li>O administrador pode então usar a página de <strong>'Ajuste Manual de Estoque'</strong> para corrigir oficialmente o valor no sistema, se julgar necessário.</li>
+                </ol>
+                <p>Isso cria um processo de dupla verificação, garantindo que alterações no estoque sejam feitas de forma controlada e auditada.</p>
+            `
+        }
+    ];
+
+    // --- Conexão dos Gatilhos com o Modal ---
+    const helpIcon = document.getElementById('correctionHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
+
+    const correctionForm = document.getElementById('correction-form');
+    if (correctionForm) {
+        correctionForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio real do formulário
+
+            if (!correctionForm.checkValidity()) {
+                correctionForm.reportValidity();
+                return;
+            }
+
+            const productName = document.getElementById('product-search-correction').value;
+            const simulationSteps = [{
+                title: "Simulando Apontamento",
+                content: `
+                    <p>Em um ambiente real, o sistema agora salvaria este apontamento de divergência para o produto <strong>${productName}</strong>.</p>
+                    <p>O registro apareceria na lista de 'Apontamentos Pendentes' para que um administrador possa revisar e tomar a ação necessária.</p>
+                    <p>Como este é um modo de demonstração, nenhum registro será salvo no banco de dados.</p>
+                `
+            }];
+            showDemoModal(simulationSteps);
+        });
+    }
+
+    // --- LÓGICA ORIGINAL DA PÁGINA (BUSCA) ---
+    const searchInput = document.getElementById('product-search-correction');
+    const suggestionsDiv = document.getElementById('product-suggestions');
+    const hiddenCodeInput = document.getElementById('codigo_produto_hidden');
+    const stockDisplay = document.getElementById('estoque_sistema_display');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value;
+        hiddenCodeInput.value = '';
+        stockDisplay.value = 'Selecione um produto';
+
+        if (query.length < 2) {
+            suggestionsDiv.innerHTML = '';
+            return;
+        }
+
+        fetch(`{{ url_for('api_product_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                suggestionsDiv.innerHTML = '';
+                data.forEach(product => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = product.label;
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        searchInput.value = product.label;
+                        hiddenCodeInput.value = product.codigo;
+                        stockDisplay.value = product.estoque !== null ? product.estoque : 'Não disponível';
+                        suggestionsDiv.innerHTML = '';
+                    });
+                    suggestionsDiv.appendChild(item);
+                });
+            });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!suggestionsDiv.contains(e.target) && e.target !== searchInput) {
+            suggestionsDiv.innerHTML = '';
+        }
+    });
+});
+</script>
+<!-- O script antigo foi integrado ao novo e pode ser removido -->
+<!--
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('product-search-correction');
@@ -146,4 +276,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+-->
 {% endblock %}
