@@ -8,7 +8,7 @@
 ![Status: Demo](https://img.shields.io/badge/Status-Vers%C3%A3o%20Demo%20de%20Produ%C3%A7%C3%A3o-orange?style=for-the-badge)
 
 ## História real do projeto
-Esse sistema **foi usado todos os dias durante mais de 1 ano** em uma agropecuária real.  
+Esse sistema **foi usado todos os dias durante mais de 8 meses** em uma agropecuária real.  
 Substituiu completamente planilhas manuais e automatizava:
 - Controle de vendas e contas a receber
 - Estoque de defensivos, fertilizantes e rações
