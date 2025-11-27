@@ -4,9 +4,14 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-chart-line me-2"></i>Análise de Vendas Perdidas</h2>
-        <a href="{{ url_for('export_lost_sales_report') }}" target="_blank" class="btn btn-outline-secondary">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0 me-3"><i class="fas fa-chart-line me-2"></i>Análise de Vendas Perdidas</h2>
+            <a href="#" id="lostSalesHelp" title="Como funciona este relatório?">
+                <i class="fas fa-question-circle fa-2x text-info"></i>
+            </a>
+        </div>
+        <a href="{{ url_for('export_lost_sales_report') }}" target="_blank" class="btn btn-outline-secondary ms-auto">
             <i class="fas fa-print me-2"></i>Exportar Relatório Completo
         </a>
     </div>
@@ -91,6 +96,77 @@
 {% block scripts %}
 {{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-lightbulb me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const lostSalesExplanation = [
+        {
+            title: "Análise de Vendas Perdidas",
+            content: `
+                <p>Esta tela é um painel de <strong>Inteligência de Negócio (BI)</strong> que transforma os dados brutos de vendas perdidas em insights acionáveis.</p>
+                <p>O objetivo é responder a perguntas estratégicas como:</p>
+                <ul>
+                    <li><strong>Por que</strong> estamos perdendo vendas? (Gráfico de Motivos)</li>
+                    <li><strong>O que</strong> os clientes procuram e não compram? (Tabela de Produtos)</li>
+                    <li><strong>Onde</strong> as perdas estão acontecendo? (Tabela de Lojas)</li>
+                </ul>
+                <p>Com essas informações, a gestão pode identificar tendências e tomar decisões informadas, como ajustar preços, negociar com fornecedores, ou até mesmo adicionar novos produtos ao catálogo para atender a uma demanda não suprida.</p>
+                <p class="text-center bg-dark p-2 rounded">Cada registro feito na tela de 'Venda Perdida' alimenta diretamente este painel.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('lostSalesHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(lostSalesExplanation);
+        });
+    }
+
+    // --- LÓGICA ORIGINAL DO GRÁFICO ---
+    // (O código do gráfico é movido para dentro deste listener)
+});
+</script>
 <script>
     const ctx = document.getElementById('reasonsChart');
     new Chart(ctx, {
