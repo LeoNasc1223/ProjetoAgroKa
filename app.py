@@ -2310,8 +2310,8 @@ def report_sales_history():
         flash('Acesso não autorizado.', 'danger')
         return redirect(url_for('index'))
 
-    start_date = request.args.get('start_date', (datetime.date.today() - datetime.timedelta(days=30)).isoformat())
-    end_date = request.args.get('end_date', datetime.date.today().isoformat())
+    start_date = request.args.get('start_date', '2025-04-16')
+    end_date = request.args.get('end_date', '2025-11-27')
 
     try:
         conn = sqlite3.connect(DATABASE_FILE)
@@ -3244,4 +3244,3 @@ if __name__ == '__main__':
             logger_app.error(f"Erro ao tentar iniciar o ngrok: {e}")
 
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False) # use_reloader=False para evitar múltiplas sessões do ngrok
-
