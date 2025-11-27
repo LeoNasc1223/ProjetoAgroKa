@@ -18,12 +18,17 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow-sm">
-            <div class="card-header bg-darkd">
-                <h2 class="h4 mb-0">Reportar Problema ou Sugerir Melhoria</h2>
-                <p class="mb-0 text-muted">Sua opinião é importante para a evolução do sistema.</p>
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h4 mb-0">Reportar Problema ou Sugerir Melhoria</h2>
+                    <p class="mb-0 text-muted">Sua opinião é importante para a evolução do sistema.</p>
+                </div>
+                <a href="#" id="reportHelp" title="Como funciona esta página?">
+                    <i class="fas fa-question-circle fa-2x text-info"></i>
+                </a>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('report_issue') }}">
+                <form id="reportIssueForm" method="POST" action="{{ url_for('report_issue') }}">
                     <div class="mb-3">
                         <label for="feedback_type" class="form-label">Tipo de Feedback</label>
                         <select class="form-select" id="feedback_type" name="feedback_type" required>
@@ -52,4 +57,98 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-paper-plane me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Canal de Comunicação Direto",
+            content: `
+                <p>Esta página serve como um canal de comunicação direto entre você e a equipe de administração do sistema.</p>
+                <p>Use-a para:</p>
+                <ul>
+                    <li><strong>Reportar Bugs:</strong> Se algo não está funcionando como esperado.</li>
+                    <li><strong>Sugerir Melhorias:</strong> Se você tem uma ideia para uma nova funcionalidade ou para melhorar uma existente.</li>
+                </ul>
+                <p>Todo feedback enviado é revisado e ajuda a tornar o sistema melhor para todos.</p>
+            `
+        }
+    ];
+
+    const submissionSteps = [
+        {
+            title: "Passo 1: Registro do Feedback",
+            content: `<p>Ao clicar em "Enviar Feedback", o sistema salva todas as informações (tipo, assunto e descrição) em uma tabela específica no banco de dados, junto com seu nome de usuário e a data/hora do envio.</p>`
+        },
+        {
+            title: "Passo 2: Notificação aos Administradores",
+            content: `<p>Imediatamente após salvar, o sistema cria uma <strong>notificação interna</strong> para todos os usuários com cargo de 'Admin'.</p><p>Essa notificação aparece no ícone de sino <i class="fas fa-bell"></i> no menu deles, garantindo que sua mensagem seja vista rapidamente.</p>`
+        },
+        {
+            title: "Passo 3: Acompanhamento",
+            content: `<p>Você pode acompanhar o status e as respostas para todos os seus feedbacks na página <strong>'Meus Feedbacks'</strong>, acessível pelo menu do seu perfil.</p>`
+        }
+    ];
+
+    // --- Conexão dos Gatilhos com o Modal ---
+    document.getElementById('reportHelp').addEventListener('click', function(e) {
+        e.preventDefault();
+        showDemoModal(pageExplanation);
+    });
+
+    const reportForm = document.getElementById('reportIssueForm');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio real do formulário
+            if (!reportForm.checkValidity()) {
+                reportForm.reportValidity();
+                return;
+            }
+            showDemoModal(submissionSteps);
+        });
+    }
+});
+</script>
 {% endblock %}
