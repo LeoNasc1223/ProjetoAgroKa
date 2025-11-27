@@ -48,8 +48,13 @@
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h1 class="h4 mb-0">Entrada de Dados da Prateleira</h1>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <h1 class="h4 mb-0">Entrada de Dados da Prateleira</h1>
+            <a href="#" id="pageHelp" title="Como funciona esta página?" class="ms-3">
+                <i class="fas fa-question-circle fa-2x text-info"></i>
+            </a>
+        </div>
         <div class="text-end">
             <a href="{{ url_for('review_sales') }}" class="btn btn-sm btn-outline-secondary position-relative me-2">
                 <i class="fas fa-clipboard-check me-1"></i>Revisar Vendas
@@ -198,6 +203,23 @@
             const demoModalFooter = document.getElementById('demoModalFooter');
             const demoModalLabel = document.getElementById('demoModalLabel');
 
+            // Explicação para o ícone de ajuda da página
+            const pageExplanation = [
+                {
+                    title: "Entrada de Dados da Prateleira",
+                    content: `
+                        <p>Esta é a tela principal para o operador. O objetivo é registrar a contagem de produtos diretamente da prateleira da loja.</p>
+                        <h5>Como Usar:</h5>
+                        <ol>
+                            <li><strong>Buscar Produto:</strong> Use o campo de busca ou o leitor de código de barras para encontrar o produto.</li>
+                            <li><strong>Informar Quantidades:</strong> Preencha quantos itens estão na prateleira e quantos faltam para completá-la.</li>
+                            <li><strong>Registrar Entrada:</strong> Ao clicar no botão, o sistema analisa os dados e decide se é necessário um pedido de <strong>compra</strong> ou apenas uma <strong>reposição</strong> do estoque de depósito.</li>
+                        </ol>
+                        <p>Cada registro é salvo em um log para auditoria e análise de produtividade.</p>
+                    `
+                }
+            ];
+
             // --- Funções de Controle do Formulário ---
 
             function resetForm() {
@@ -319,6 +341,15 @@
 
             // Listener para o botão de limpar
             clearSearchBtn.addEventListener('click', resetForm);
+
+            // Listener para o novo ícone de ajuda da página
+            const pageHelpIcon = document.getElementById('pageHelp');
+            if (pageHelpIcon) {
+                pageHelpIcon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showDemoModal(pageExplanation);
+                });
+            }
 
             // Listener para calcular o backstock em tempo real
             qtdPrateleiraInput.addEventListener('input', calculateBackstock);
