@@ -4,8 +4,15 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Meus Feedbacks Enviados</h1>
-    <p>Acompanhe o status e as respostas para os problemas e sugestões que você enviou.</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="mb-1">Meus Feedbacks Enviados</h1>
+            <p class="text-muted mb-0">Acompanhe o status e as respostas para os problemas e sugestões que você enviou.</p>
+        </div>
+        <a href="#" id="myFeedbackHelp" title="Como funciona esta página?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -20,6 +27,10 @@
 
     {% if feedbacks %}
         <div class="accordion" id="myFeedbackAccordion">
+            {# Dicionário para mapear nomes de usuário para nomes anônimos #}
+            {% set user_map = {} %}
+            {% set user_counter = {'value': 1} %}
+
             {% for feedback in feedbacks %}
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading{{ feedback.id }}">
@@ -37,8 +48,17 @@
                         {% if feedback.admin_response %}
                         <hr>
                         <div class="alert alert-success mt-3">
+                            {# Lógica para anonimizar o nome do admin que respondeu #}
+                            {% if feedback.response_username and feedback.response_username not in user_map %}
+                                {% if feedback.response_username|lower == 'adm' %}
+                                    {% do user_map.update({feedback.response_username: 'Admin'}) %}
+                                {% else %}
+                                    {% do user_map.update({feedback.response_username: 'Operador ' ~ user_counter.value}) %}
+                                    {% do user_counter.update({'value': user_counter.value + 1}) %}
+                                {% endif %}
+                            {% endif %}
                             <h5 class="alert-heading">Resposta do Administrador</h5>
-                            <p><strong>Respondido por:</strong> {{ feedback.response_username }} em {{ feedback.response_timestamp }}</p>
+                            <p><strong>Respondido por:</strong> {{ user_map.get(feedback.response_username, 'Admin') }} em {{ feedback.response_timestamp }}</p>
                             <p class="mb-0" style="white-space: pre-wrap;">{{ feedback.admin_response }}</p>
                         </div>
                         {% endif %}
@@ -53,4 +73,76 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-comment-dots me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const myFeedbackExplanation = [
+        {
+            title: "Acompanhando Seus Feedbacks",
+            content: `
+                <p>Esta página é o seu canal direto de comunicação com a administração. Aqui você pode ver o histórico de todos os problemas e sugestões que enviou.</p>
+                <h5>Interpretando os Status:</h5>
+                <ul>
+                    <li><span class="badge bg-secondary">Pendente</span>: Seu feedback foi recebido e está aguardando para ser analisado.</li>
+                    <li><span class="badge bg-info">Em Análise</span>: Um administrador está atualmente revisando sua solicitação.</li>
+                    <li><span class="badge bg-success">Resolvido</span>: A ação solicitada foi concluída ou a sugestão foi implementada.</li>
+                    <li><span class="badge bg-danger">Rejeitado</span>: Após análise, a solicitação não pôde ser atendida.</li>
+                </ul>
+                <p>Quando um administrador responde, a resposta aparecerá aqui e você receberá uma notificação no ícone de sino <i class="fas fa-bell"></i> no menu superior.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('myFeedbackHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(myFeedbackExplanation);
+        });
+    }
+});
+</script>
 {% endblock %}
