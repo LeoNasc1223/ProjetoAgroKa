@@ -19,9 +19,14 @@
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-dark">
-        <h2 class="h4 mb-0">Relatório Histórico de Vendas</h2>
-        <p class="mb-0 text-muted">Visualize as vendas processadas pelo sistema. O valor é calculado com base no preço <strong>atual</strong> do produto.</p>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Relatório Histórico de Vendas</h2>
+            <p class="mb-0 text-muted">Visualize as vendas processadas pelo sistema. O valor é calculado com base no preço <strong>atual</strong> do produto.</p>
+        </div>
+        <a href="#" id="salesHistoryHelp" title="Como funciona este relatório?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
     </div>
     <div class="card-body">
         <div class="p-3 mb-4 rounded" style="background-color: var(--bs-tertiary-bg);">
@@ -101,28 +106,92 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
-document.getElementById('salesHistorySearch').addEventListener('keyup', function() {
-    let filter = this.value.toUpperCase();
-    let tableBody = document.getElementById('salesHistoryTableBody');
-    let rows = tableBody.getElementsByTagName('tr');
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
 
-    for (let i = 0; i < rows.length; i++) {
-        let cells = rows[i].getElementsByTagName('td');
-        let found = false;
-        if (cells.length > 0) {
-            // Busca no código (célula 1) e nome (célula 2)
-            if ((cells[1] && cells[1].textContent.toUpperCase().indexOf(filter) > -1) ||
-                (cells[2] && cells[2].textContent.toUpperCase().indexOf(filter) > -1)) {
-                found = true;
-            }
-            
-            if (found) {
-                rows[i].style.display = "";
-            } else {
-                rows[i].style.display = "none";
-            }
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-history me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
         }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const salesHistoryExplanation = [
+        {
+            title: "Como Funciona o Histórico de Vendas?",
+            content: `
+                <p>Este relatório exibe um registro detalhado de todas as vendas que foram <strong>processadas</strong> através da tela de 'Revisar Vendas'. Ele é fundamental para entender o fluxo de saída dos produtos e para análises financeiras.</p>
+                <h5>Pontos Importantes:</h5>
+                <ul>
+                    <li><strong>Filtro de Período:</strong> Você pode definir um intervalo de datas para focar sua análise em um período específico.</li>
+                    <li><strong>Preço Atual:</strong> O 'Preço Unit.' e o 'Valor Total' são calculados usando o preço <strong>atual</strong> do produto no sistema, não o preço no momento da venda. Isso é útil para estimar o faturamento se as mesmas vendas ocorressem hoje.</li>
+                    <li><strong>Exportação:</strong> Você pode exportar todos os dados do período selecionado para um arquivo CSV, facilitando a análise em outras ferramentas como Excel ou Google Sheets.</li>
+                </ul>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('salesHistoryHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(salesHistoryExplanation);
+        });
+    }
+
+    // --- Lógica Original da Página (Filtro) ---
+    const searchInput = document.getElementById('salesHistorySearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            let filter = this.value.toUpperCase();
+            let tableBody = document.getElementById('salesHistoryTableBody');
+            let rows = tableBody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                if (cells.length > 0) {
+                    if ((cells[1] && cells[1].textContent.toUpperCase().indexOf(filter) > -1) ||
+                        (cells[2] && cells[2].textContent.toUpperCase().indexOf(filter) > -1)) {
+                        found = true;
+                    }
+                    rows[i].style.display = found ? "" : "none";
+                }
+            }
+        });
     }
 });
 </script>
