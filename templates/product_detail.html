@@ -6,12 +6,17 @@
 <div class="container mt-4">
     <div class="card mb-4">
         <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-0">{{ product.nome_produto }}</h2>
-                    <h5 class="text-muted">Código: {{ product.codigo_produto }}</h5>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h2 class="mb-0">{{ product.nome_produto }}</h2>
+                        <h5 class="text-muted">Código: {{ product.codigo_produto }}</h5>
+                    </div>
+                    <a href="#" id="pageHelp" title="Como funciona esta página?" class="ms-3">
+                        <i class="fas fa-question-circle fa-2x text-info"></i>
+                    </a>
                 </div>
-                <a href="{{ url_for('global_search') }}" class="btn btn-outline-secondary">Voltar para a Busca</a>
+                <a href="{{ url_for('global_search') }}" class="btn btn-outline-secondary ms-auto">Voltar para a Busca</a>
             </div>
         </div>
         <div class="card-body">
@@ -117,11 +122,11 @@
                         </div>
                     </div>
 
-                    <div class="form-check mb-3 p-3 border rounded bg-dark">
+                    <div class="form-check mb-3 p-3 border rounded bg-body-tertiary">
                         <input class="form-check-input" type="checkbox" name="forcar_compra" id="forcar_compra" value="true">
                         <label class="form-check-label" for="forcar_compra">
                             <strong>Forçar Pedido de Compra</strong>
-                            <small class="d-block text-muted">Marque esta opção se o estoque de segurança (backstock) for insuficiente e a compra for urgente.</small>
+                            <i id="forceBuyHelp" class="fas fa-question-circle text-info ms-1" style="cursor: pointer;" title="O que isso faz?"></i>
                         </label>
                     </div>
 
@@ -140,6 +145,87 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-info-circle me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Entendendo os Detalhes do Produto",
+            content: `
+                <p>Esta página oferece uma visão 360° de um produto, combinando dados de estoque, vendas e lotes para uma análise completa.</p>
+                <h5>Seções Principais:</h5>
+                <ul>
+                    <li><strong>Informações Gerais:</strong> Dados básicos do produto como preço, estoque total, marca e classe.</li>
+                    <li><strong>Análise de Estoque:</strong> Mostra os "Dias de Estoque Restante", uma previsão de quanto tempo o estoque atual durará com base na média de vendas recentes.</li>
+                    <li><strong>Lotes em Estoque:</strong> Lista todos os lotes deste produto que ainda estão no estoque, com suas respectivas datas de validade e quantidades.</li>
+                    <li><strong>Histórico de Vendas:</strong> Um gráfico que exibe a quantidade vendida por dia, ajudando a visualizar a performance do produto.</li>
+                    <li><strong>Ação Rápida:</strong> Um formulário para registrar rapidamente a contagem de prateleira e solicitar reposição ou compra, sem precisar voltar à tela inicial.</li>
+                </ul>
+            `
+        }
+    ];
+
+    const forceBuyExplanation = [
+        {
+            title: "O que é 'Forçar Pedido de Compra'?",
+            content: `
+                <p>Normalmente, o sistema decide entre 'Reposição' e 'Compra' com base no estoque de retaguarda (backstock).</p>
+                <p>Marcar esta opção <strong>ignora esse cálculo</strong> e força o sistema a adicionar o produto diretamente na planilha de <strong>'COMPRAS'</strong>.</p>
+                <p>É útil para produtos de alta rotatividade ou em promoção, garantindo que um novo pedido seja feito com antecedência para evitar que o produto falte na loja.</p>
+            `
+        }
+    ];
+
+    // --- Conexão dos Ícones de Ajuda com o Modal ---
+    document.getElementById('pageHelp').addEventListener('click', function(e) {
+        e.preventDefault();
+        showDemoModal(pageExplanation);
+    });
+
+    document.getElementById('forceBuyHelp').addEventListener('click', function(e) {
+        e.preventDefault();
+        showDemoModal(forceBuyExplanation);
+    });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Lógica para o gráfico de histórico de vendas
