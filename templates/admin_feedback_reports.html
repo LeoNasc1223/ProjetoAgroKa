@@ -4,8 +4,15 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Relatórios de Feedback</h1>
-    <p>Aqui você pode visualizar e responder aos feedbacks enviados pelos usuários.</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="mb-1">Relatórios de Feedback</h1>
+            <p class="text-muted mb-0">Aqui você pode visualizar e responder aos feedbacks enviados pelos usuários.</p>
+        </div>
+        <a href="#" id="feedbackHelp" title="Como funciona esta página?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -44,7 +51,7 @@
                         {% endif %}
 
                         <h5 class="mt-4">Responder ou Atualizar Status</h5>
-                        <form action="{{ url_for('update_feedback_report', feedback_id=feedback.id) }}" method="POST">
+                        <form class="feedback-response-form" action="{{ url_for('update_feedback_report', feedback_id=feedback.id) }}" method="POST">
                             <div class="mb-3">
                                 <label for="admin_response_{{ feedback.id }}" class="form-label">Sua Resposta</label>
                                 <textarea class="form-control" id="admin_response_{{ feedback.id }}" name="admin_response" rows="3" required>{{ feedback.admin_response or '' }}</textarea>
@@ -71,4 +78,101 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-comments me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Gerenciando Feedbacks",
+            content: `
+                <p>Esta página centraliza todas as <strong>sugestões e problemas</strong> reportados pelos usuários do sistema.</p>
+                <p>O objetivo é criar um canal de comunicação direto entre os operadores e a administração, permitindo a melhoria contínua do sistema e dos processos.</p>
+                <p>Cada item pode ser expandido para visualizar os detalhes e fornecer uma resposta, que será notificada ao usuário original.</p>
+            `
+        }
+    ];
+
+    const responseSteps = [
+        {
+            title: "Passo 1: Análise e Resposta",
+            content: `
+                <p>Ao clicar em "Enviar Resposta", o sistema primeiro coleta os dados que você forneceu:</p>
+                <ul>
+                    <li>O texto da sua <strong>resposta</strong>.</li>
+                    <li>O novo <strong>status</strong> do feedback (ex: 'Em Análise', 'Resolvido').</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 2: Atualização no Banco de Dados",
+            content: `
+                <p>O sistema atualiza o registro de feedback no banco de dados, adicionando sua resposta, seu nome de usuário e a data/hora da resposta. O status do feedback também é atualizado.</p>
+                <p>Isso mantém um histórico completo de toda a comunicação relacionada ao problema ou sugestão.</p>
+            `
+        },
+        {
+            title: "Passo 3: Notificação ao Usuário",
+            content: `
+                <p>Para fechar o ciclo de comunicação, o sistema cria automaticamente uma <strong>notificação interna</strong> para o usuário que enviou o feedback originalmente.</p>
+                <p>Essa notificação aparecerá no ícone de sino <i class="fas fa-bell"></i> no menu do usuário, informando que sua solicitação foi respondida e permitindo que ele veja sua mensagem.</p>
+            `
+        }
+    ];
+
+    // --- Conexão dos Gatilhos com o Modal ---
+    document.getElementById('feedbackHelp').addEventListener('click', function(e) {
+        e.preventDefault();
+        showDemoModal(pageExplanation);
+    });
+
+    document.querySelectorAll('.feedback-response-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            showDemoModal(responseSteps);
+        });
+    });
+});
+</script>
 {% endblock %}
