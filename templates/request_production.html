@@ -110,6 +110,87 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-cogs me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const productionSteps = [
+        {
+            title: "Passo 1: Seleção e Cálculo",
+            content: `
+                <p>O operador seleciona dois produtos:</p>
+                <ul>
+                    <li>O <strong>produto a ser criado</strong> (ex: pacote de 2.5KG).</li>
+                    <li>O <strong>produto de origem</strong> (ex: saco de 50KG).</li>
+                </ul>
+                <p>O sistema automaticamente extrai o peso de cada nome de produto e calcula quantos pacotes menores podem ser produzidos a partir de um saco maior, exibindo o resultado na tela.</p>
+                <p class='text-center bg-dark p-2 rounded'><code>Qtd. Produzida = Peso do Saco / Peso do Pacote</code></p>
+            `
+        },
+        {
+            title: "Passo 2: Envio da Solicitação",
+            content: `
+                <p>Ao clicar em "Enviar Solicitação", o sistema não altera o estoque diretamente. Em vez disso, ele cria uma nova tarefa na planilha do Google Sheets, na aba <strong>'PRODUÇÃO'</strong>.</p>
+                <p>Esta nova linha na planilha contém todas as informações necessárias:</p>
+                <ul>
+                    <li>Data e hora da solicitação.</li>
+                    <li>Nome do solicitante.</li>
+                    <li>Produtos envolvidos (origem e fracionado).</li>
+                    <li>Quantidade a ser produzida.</li>
+                    <li>Um status inicial de <strong>'PENDENTE'</strong>.</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 3: Fluxo de Trabalho Manual",
+            content: `
+                <p>A solicitação na planilha serve como um gatilho para um processo manual:</p>
+                <ol>
+                    <li>A <strong>equipe de produção</strong> visualiza a tarefa pendente na planilha.</li>
+                    <li>Eles realizam a quebra do produto fisicamente.</li>
+                    <li>Após a produção, um responsável <strong>ajusta manualmente o estoque no sistema E-Trade</strong>, dando baixa no saco grande e entrada nos pacotes menores.</li>
+                    <li>Finalmente, o status da tarefa na planilha é alterado para <strong>'CONCLUÍDO'</strong>.</li>
+                </ol>
+                <p>Este fluxo garante um controle claro sobre as solicitações e a execução da produção, separando a tarefa do sistema da ação física no estoque.</p>
+            `
+        }
+    ];
+
+    // --- LÓGICA EXISTENTE DA PÁGINA ---
+
     // Função de debounce para evitar chamadas excessivas à API
     function debounce(func, wait) {
         let timeout;
@@ -204,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
             triggerCalculation();
         }
 
-        searchInput.addEventListener('input', async function() {
+        searchInput.addEventListener('input', debounce(async function() {
             const query = this.value.trim();
             autocompleteContainer.innerHTML = '';
             autocompleteContainer.style.display = 'none';
@@ -230,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error(`Erro na busca (${type}):`, error);
             }
-        });
+        }, 300));
 
         clearBtn.addEventListener('click', resetSearch);
     }
@@ -249,10 +330,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validação do formulário antes do envio
     $('#productionForm').on('submit', function(e) {
+        e.preventDefault(); // Impede o envio real do formulário
+
         if ($('#submitButton').is(':disabled')) {
-            e.preventDefault();
             alert('Por favor, preencha todos os campos e certifique-se de que o cálculo foi realizado com sucesso antes de enviar.');
+            return;
         }
+
+        // Se a validação passar, mostra o modal de demonstração
+        showDemoModal(productionSteps);
     });
 });
 </script>
