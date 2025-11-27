@@ -19,9 +19,14 @@
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-dark>
-        <h2 class="h4 mb-0">Relatório de Produtos sem Movimentação (Estoque Parado)</h2>
-        <p class="mb-0 text-muted">Lista produtos com estoque que não tiveram vendas ou entradas no período definido.</p>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Relatório de Produtos sem Movimentação (Estoque Parado)</h2>
+            <p class="mb-0 text-muted">Lista produtos com estoque que não tiveram vendas ou entradas no período definido.</p>
+        </div>
+        <a href="#" id="stagnantStockHelp" title="Como funciona este relatório?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
     </div>
     <div class="card-body">
         <div class="p-3 mb-4 rounded" style="background-color: var(--bs-tertiary-bg);">
@@ -79,28 +84,96 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
-document.getElementById('stagnantStockSearch').addEventListener('keyup', function() {
-    let filter = this.value.toUpperCase();
-    let tableBody = document.getElementById('stagnantStockTableBody');
-    let rows = tableBody.getElementsByTagName('tr');
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
 
-    for (let i = 0; i < rows.length; i++) {
-        let cells = rows[i].getElementsByTagName('td');
-        let found = false;
-        if (cells.length > 0) {
-            for (let j = 0; j < cells.length; j++) {
-                if (cells[j] && cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-box-open me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const stagnantStockExplanation = [
+        {
+            title: "O que é o Relatório de Estoque Parado?",
+            content: `
+                <p>Este relatório identifica produtos que estão ocupando espaço no estoque mas não estão sendo vendidos, representando capital parado.</p>
+                <p>Ele funciona da seguinte forma:</p>
+                <ol>
+                    <li>Você define um período de inatividade (ex: 90 dias).</li>
+                    <li>O sistema busca todos os produtos que possuem estoque positivo.</li>
+                    <li>Para cada um desses produtos, ele verifica se houve alguma <strong>venda processada</strong> ou alguma <strong>entrada de prateleira</strong> registrada nos últimos 90 dias.</li>
+                    <li>Se um produto não teve <strong>nenhuma movimentação</strong> (nem venda, nem entrada) nesse período, ele é listado aqui.</li>
+                </ol>
+                <p>Com base nesta lista, a gestão pode tomar decisões como criar promoções, negociar devoluções com fornecedores ou simplesmente descontinuar o item.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('stagnantStockHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(stagnantStockExplanation);
+        });
+    }
+
+    // --- Lógica Original da Página (Filtro) ---
+    const searchInput = document.getElementById('stagnantStockSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            let filter = this.value.toUpperCase();
+            let tableBody = document.getElementById('stagnantStockTableBody');
+            let rows = tableBody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                if (cells.length > 0) {
+                    for (let j = 0; j < cells.length; j++) {
+                        if (cells[j] && cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    rows[i].style.display = found ? "" : "none";
                 }
             }
-            if (found) {
-                rows[i].style.display = "";
-            } else {
-                rows[i].style.display = "none";
-            }
-        }
+        });
     }
 });
 </script>
