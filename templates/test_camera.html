@@ -7,9 +7,14 @@
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-dark">
-        <h2 class="h4 mb-0">Teste de Acesso à Câmera</h2>
-        <p class="mb-0 text-muted">Verifique se o seu navegador e dispositivo permitem o acesso à câmera.</p>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Teste de Acesso à Câmera</h2>
+            <p class="mb-0 text-muted">Verifique se o seu navegador e dispositivo permitem o acesso à câmera.</p>
+        </div>
+        <a href="#" id="cameraTestHelp" title="Para que serve esta página?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
     </div>
     <div class="card-body text-center">
         <p>Esta página tenta acessar a câmera do seu dispositivo. Se funcionar, você verá a imagem da sua câmera abaixo. Se não, uma mensagem de erro será exibida.</p>
@@ -24,8 +29,76 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-camera-retro me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const cameraTestExplanation = [
+        {
+            title: "Para que serve o Teste de Câmera?",
+            content: `
+                <p>Esta página é uma ferramenta de diagnóstico simples para verificar se o sistema consegue acessar a câmera do seu dispositivo.</p>
+                <h5>Por que isso é importante?</h5>
+                <p>O leitor de código de barras, uma funcionalidade chave do sistema, depende do acesso à câmera para funcionar. Este teste ajuda a identificar problemas comuns antecipadamente:</p>
+                <ul>
+                    <li><strong>Permissões Negadas:</strong> Verifica se você concedeu permissão para o site usar sua câmera.</li>
+                    <li><strong>Conexão Segura (HTTPS):</strong> O acesso à câmera só é permitido em conexões seguras. Esta página confirma se a conexão está correta.</li>
+                    <li><strong>Dispositivo sem Câmera:</strong> Detecta se o dispositivo que você está usando possui uma câmera traseira ('environment').</li>
+                    <li><strong>Câmera em Uso:</strong> Informa se a câmera já está sendo usada por outro aplicativo.</li>
+                </ul>
+                <p>Se a imagem da sua câmera aparecer, significa que a funcionalidade de leitura de código de barras está pronta para ser usada!</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('cameraTestHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(cameraTestExplanation);
+        });
+    }
+
+    // --- LÓGICA ORIGINAL DA PÁGINA (TESTE DE CÂMERA) ---
     const video = document.getElementById('video');
     const statusAlert = document.getElementById('status-alert');
 
@@ -61,4 +134,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
 {% endblock %}
