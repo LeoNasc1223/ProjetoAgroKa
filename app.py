@@ -48,7 +48,6 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(16)) # Boa
 logging.basicConfig(level=logging.INFO)
 logger_app = logging.getLogger(__name__)  # Logger específico para o app Flask
 
-
 def remove_accents(input_str):
     """Remove acentos de uma string, retornando uma versão ASCII."""  
     if not isinstance(input_str, str):
@@ -3245,3 +3244,4 @@ if __name__ == '__main__':
             logger_app.error(f"Erro ao tentar iniciar o ngrok: {e}")
 
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False) # use_reloader=False para evitar múltiplas sessões do ngrok
+
