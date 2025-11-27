@@ -18,8 +18,13 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm">
-            <div class="card-header bg-dark">
-                <h2 class="h4 mb-0">Editando Usuário: <span class="fw-bold">{{ user.username }}</span></h2>
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h4 mb-0">Editando Usuário: <span class="fw-bold">{{ user.username }}</span></h2>
+                </div>
+                <a href="#" id="editUserHelp" title="Como funciona esta página?">
+                    <i class="fas fa-question-circle fa-2x text-info"></i>
+                </a>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}" id="editUserForm">
@@ -78,11 +83,97 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-user-edit me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const editUserSteps = [
+        {
+            title: "Passo 1: Coleta e Validação",
+            content: `
+                <p>Ao clicar em "Salvar Alterações", o sistema coleta todos os dados modificados no formulário:</p>
+                <ul>
+                    <li>Nome Completo, Cargo, Loja, Nome na Planilha e a permissão de acesso multiloja.</li>
+                    <li>Ele também verifica se o campo "Nova Senha" foi preenchido.</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 2: Atualização no Banco de Dados",
+            content: `
+                <p>O sistema executa um comando <code>UPDATE</code> na tabela de <strong>usuários</strong> para salvar as novas informações.</p>
+                <p><strong>Se uma nova senha foi fornecida:</strong></p>
+                <ol>
+                    <li>A senha é criptografada usando um algoritmo seguro (hash).</li>
+                    <li>O hash resultante é salvo no banco de dados, substituindo o antigo. A senha original nunca é armazenada.</li>
+                </ol>
+            `
+        },
+        {
+            title: "Passo 3: Registro de Auditoria",
+            content: `
+                <p>Para garantir a rastreabilidade, uma nova linha é adicionada ao <strong>Log de Auditoria</strong>.</p>
+                <p>Este registro contém:</p>
+                <ul>
+                    <li>Quem fez a alteração (o administrador logado).</li>
+                    <li>Quando a alteração foi feita.</li>
+                    <li>Qual usuário foi modificado.</li>
+                </ul>
+                <p>Isso permite que todas as modificações de permissões e dados de usuários sejam monitoradas.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Formulário com o Modal ---
+    const helpIcon = document.getElementById('editUserHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(editUserSteps);
+        });
+    }
+
+    // --- Lógica Original do Formulário (Spinner) ---
     const form = document.getElementById('editUserForm');
     const saveButton = document.getElementById('saveButton');
-
     form.addEventListener('submit', function() {
         saveButton.disabled = true;
         saveButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...`;
