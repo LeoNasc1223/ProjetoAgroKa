@@ -3,25 +3,37 @@
 {% block title %}Ajuste Manual de Estoque{% endblock %}
 
 {% block head %}
+<style>
+    .autocomplete-container {
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 1050; /* Garante que fique sobre outros elementos */
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-dark>
-        <h2 class="h4 mb-0">Ajuste Manual de Estoque</h2>
-        <p class="mb-0 text-muted">Use esta página para corrigir o estoque de um produto no sistema. Todas as alterações são registradas.</p>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Ajuste Manual de Estoque</h2>
+            <p class="mb-0 text-muted">Use esta página para corrigir o estoque de um produto no sistema. Todas as alterações são registradas.</p>
+        </div>
+        <a href="#" id="adjustmentHelp" title="Como funciona esta página?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
     </div>
     <div class="card-body">
         <form method="POST" action="{{ url_for('stock_adjustment') }}" id="adjustment-form">
-            <div class="row">
-                <div class="col-md-5 mb-3">
-                    <label for="codigo_produto" class="form-label">Código do Produto</label>
-                    <input type="text" class="form-control" id="codigo_produto" name="codigo_produto" required autofocus>
+            <div class="form-group position-relative mb-3">
+                <label for="product-search-adjustment" class="form-label"><strong>1. Buscar Produto</strong></label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="product-search-adjustment" placeholder="Digite nome, código ou EAN..." autocomplete="off" required>
+                    <button class="btn btn-outline-secondary" type="button" id="clear-search-btn" style="display: none;"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="col-md-7 mb-3">
-                    <label for="nome_produto" class="form-label">Nome do Produto</label>
-                    <input type="text" class="form-control" id="nome_produto" name="nome_produto" readonly placeholder="Busque um código para preencher...">
-                </div>
+                <div id="product-suggestions" class="list-group position-absolute w-100 autocomplete-container"></div>
+                <input type="hidden" name="codigo_produto" id="codigo_produto_hidden">
             </div>
 
             <!-- Div para alertas de erro -->
@@ -29,10 +41,11 @@
 
             <div id="product-details" class="d-none">
                 <hr class="my-4">
+                <h5 class="mb-3">2. Realizar Ajuste</h5>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label for="estoque_atual" class="form-label">Estoque Atual</label>
-                        <input type="text" class="form-control" id="estoque_atual" readonly>
+                        <input type="text" class="form-control" id="estoque_atual" readonly disabled>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="novo_estoque" class="form-label">Novo Estoque Total</label>
@@ -40,7 +53,7 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="diferenca" class="form-label">Diferença</label>
-                        <input type="text" class="form-control" id="diferenca" readonly>
+                        <input type="text" class="form-control" id="diferenca" readonly disabled>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -48,7 +61,7 @@
                     <textarea class="form-control" id="motivo" name="motivo" rows="3" required placeholder="Ex: Contagem de inventário, quebra, perda, etc."></textarea>
                 </div>
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-warning btn-lg"><i class="fas fa-save me-2"></i>Salvar Ajuste</button>
+                    <button type="submit" class="btn btn-warning btn-lg" id="submit-button"><i class="fas fa-save me-2"></i>Salvar Ajuste</button>
                 </div>
             </div>
         </form>
@@ -58,69 +71,165 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const codigoInput = document.getElementById('codigo_produto');
-    const nomeProdutoInput = document.getElementById('nome_produto');
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Elementos do DOM ---
+    const searchInput = document.getElementById('product-search-adjustment');
+    const suggestionsDiv = document.getElementById('product-suggestions');
+    const hiddenCodeInput = document.getElementById('codigo_produto_hidden');
+    const clearBtn = document.getElementById('clear-search-btn');
     const productDetailsDiv = document.getElementById('product-details');
     const estoqueAtualInput = document.getElementById('estoque_atual');
     const novoEstoqueInput = document.getElementById('novo_estoque');
     const diferencaInput = document.getElementById('diferenca');
-    const errorAlert = document.getElementById('error-alert');
+    const motivoTextarea = document.getElementById('motivo');
+    const submitButton = document.getElementById('submit-button');
 
-    const hideError = () => errorAlert.classList.add('d-none');
-    const showError = (message) => {
-        errorAlert.textContent = message;
-        errorAlert.classList.remove('d-none');
+    // --- Funções de Controle do Formulário ---
+    function resetForm() {
+        searchInput.value = '';
+        searchInput.disabled = false;
+        hiddenCodeInput.value = '';
+        suggestionsDiv.innerHTML = '';
+        clearBtn.style.display = 'none';
         productDetailsDiv.classList.add('d-none');
-    };
+        motivoTextarea.value = '';
+        novoEstoqueInput.value = '';
+        searchInput.focus();
+    }
 
-    const buscarProduto = async () => {
-        hideError();
-        const codigo = codigoInput.value.trim();
-        if (!codigo) {
-            return;
-        }
+    function selectProduct(product) {
+        searchInput.value = product.label;
+        hiddenCodeInput.value = product.codigo;
+        estoqueAtualInput.value = product.estoque !== null ? product.estoque : 0;
+        novoEstoqueInput.value = product.estoque !== null ? product.estoque : 0;
 
+        searchInput.disabled = true;
+        clearBtn.style.display = 'block';
+        suggestionsDiv.innerHTML = '';
+        productDetailsDiv.classList.remove('d-none');
+        
+        calcularDiferenca();
+        novoEstoqueInput.focus();
+    }
+
+    function calcularDiferenca() {
+        const estoqueAtual = parseInt(estoqueAtualInput.value, 10) || 0;
+        const novoEstoque = parseInt(novoEstoqueInput.value, 10) || 0;
+        const diff = novoEstoque - estoqueAtual;
+
+        diferencaInput.value = `${diff > 0 ? '+' : ''}${diff}`;
+        diferencaInput.classList.remove('text-success', 'text-danger', 'fw-bold');
+        if (diff > 0) diferencaInput.classList.add('text-success', 'fw-bold');
+        else if (diff < 0) diferencaInput.classList.add('text-danger', 'fw-bold');
+    }
+
+    // --- Lógica de Busca e Autocomplete ---
+    searchInput.addEventListener('input', async function() {
+        const query = searchInput.value.trim();
+        hiddenCodeInput.value = '';
+        suggestionsDiv.innerHTML = '';
+
+        if (query.length < 2) return;
+        
         try {
-            const response = await fetch(`/get_product_name?codigo=${encodeURIComponent(codigo)}`);
+            const response = await fetch(`{{ url_for('api_product_search') }}?q=${encodeURIComponent(query)}`);
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || `Erro ${response.status}`);
-            }
-
-            nomeProdutoInput.value = data.nome_produto;
-            estoqueAtualInput.value = data.estoque_sistema;
-            novoEstoqueInput.value = data.estoque_sistema;
-            productDetailsDiv.classList.remove('d-none');
-            calcularDiferenca();
-
+            data.forEach(product => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action';
+                item.textContent = product.label;
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    selectProduct(product);
+                });
+                suggestionsDiv.appendChild(item);
+            });
         } catch (error) {
-            showError(error.message || 'Ocorreu um erro ao buscar o produto.');
+            console.error('Erro na busca:', error);
         }
-    };
+    });
 
-    const calcularDiferenca = () => {
-        const estoqueAtual = parseInt(estoqueAtualInput.value, 10);
-        const novoEstoque = parseInt(novoEstoqueInput.value, 10);
-
-        if (!isNaN(estoqueAtual) && !isNaN(novoEstoque)) {
-            const diff = novoEstoque - estoqueAtual;
-            diferencaInput.value = `${diff > 0 ? '+' : ''}${diff}`;
-            if (diff > 0) {
-                diferencaInput.classList.add('text-success', 'fw-bold');
-                diferencaInput.classList.remove('text-danger');
-            } else if (diff < 0) {
-                diferencaInput.classList.add('text-danger', 'fw-bold');
-                diferencaInput.classList.remove('text-success');
-            } else {
-                diferencaInput.classList.remove('text-success', 'text-danger', 'fw-bold');
-            }
+    document.addEventListener('click', (e) => {
+        if (!suggestionsDiv.contains(e.target) && e.target !== searchInput) {
+            suggestionsDiv.innerHTML = '';
         }
-    };
+    });
 
-    codigoInput.addEventListener('blur', buscarProduto);
+    clearBtn.addEventListener('click', resetForm);
     novoEstoqueInput.addEventListener('input', calcularDiferenca);
+
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    function showDemoModal(steps) {
+        const step = steps[0]; // Esta tela só tem um passo de explicação
+        demoModalLabel.innerHTML = `<i class="fas fa-cogs me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+        demoModalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        demoModal.show();
+    }
+
+    const adjustmentExplanation = [
+        {
+            title: "Como Funciona o Ajuste Manual?",
+            content: `
+                <p>Esta tela permite que administradores corrijam o estoque de um produto diretamente no banco de dados do sistema.</p>
+                <h5>Passo a Passo da Ação:</h5>
+                <ol>
+                    <li><strong>Busca do Produto:</strong> O administrador seleciona o produto a ser ajustado.</li>
+                    <li><strong>Informação do Novo Estoque:</strong> O novo valor total do estoque é inserido, e o sistema calcula a diferença (positiva ou negativa).</li>
+                    <li><strong>Justificativa:</strong> Um motivo para o ajuste é obrigatório (ex: 'Contagem de inventário', 'Quebra de produto', 'Perda').</li>
+                    <li><strong>Salvar Ajuste:</strong> Ao salvar, o sistema executa duas ações cruciais:
+                        <ul>
+                            <li><strong>Atualiza o Estoque:</strong> O valor do estoque na tabela principal de produtos é substituído pelo novo valor informado.</li>
+                            <li><strong>Registra no Log:</strong> Uma nova linha é criada no <strong>Log de Ajustes</strong>, registrando quem fez a alteração, quando, qual produto, os valores antigo e novo, e o motivo.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>Este processo garante que toda correção de estoque seja rastreável, mantendo a integridade e a segurança do inventário.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('adjustmentHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(adjustmentExplanation);
+        });
+    }
+
+    // --- Interceptação do Formulário para Demonstração ---
+    const form = document.getElementById('adjustment-form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio real
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Mostra o modal de demonstração em vez de enviar
+            const demoSteps = [{
+                title: "Simulando Ajuste de Estoque",
+                content: `
+                    <p>Em um ambiente real, ao clicar em "Salvar Ajuste", o sistema executaria as seguintes ações:</p>
+                    <ol>
+                        <li>Atualizaria o estoque do produto <strong>${searchInput.value}</strong> para <strong>${novoEstoqueInput.value}</strong> unidades.</li>
+                        <li>Registraria uma entrada no Log de Auditoria com o motivo: <em>"${motivoTextarea.value}"</em>.</li>
+                    </ol>
+                    <p>Como este é um modo de demonstração, nenhuma alteração real será feita no banco de dados.</p>
+                `
+            }];
+            showDemoModal(demoSteps);
+        });
+    }
 });
 </script>
 {% endblock %}
