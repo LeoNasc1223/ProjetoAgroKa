@@ -9,7 +9,19 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            background-color: #212529;
+            color: #f8f9fa;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .report-header .text-muted {
+            color: #6c757d !important;
+        }
+        .table {
+            color: #f8f9fa;
+        }
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.05);
         }
         .report-header {
             text-align: center;
@@ -28,21 +40,41 @@
             padding: 0.2rem 0.5rem;
             font-size: 0.8rem;
         }
+        .table {
+            table-layout: fixed; /* Força a tabela a respeitar as larguras definidas */
+            width: 100%; /* Garante que a tabela ocupe todo o espaço do container */
+            word-wrap: break-word; /* Quebra palavras longas para caber na célula */
+        }
+        /* --- CONTROLE DE LARGURA DAS COLUNAS --- */
+        .table th:nth-child(1), .table td:nth-child(1) { width: 15%; } /* Data/Hora */
+        .table th:nth-child(2), .table td:nth-child(2) { width: 20%; } /* Produto */
+        .table th:nth-child(3), .table td:nth-child(3) { width: 15%; } /* Motivo */
+        .table th:nth-child(4), .table td:nth-child(4) { width: 10%; } /* Loja */
+        .table th:nth-child(5), .table td:nth-child(5) { width: 10%; } /* Responsável */
+        .table th:nth-child(6), .table td:nth-child(6) { width: 25%; } /* Comentário */
+        .table th:nth-child(7), .table td:nth-child(7) { width: 5%;  } /* Ações */
         @media print {
             .no-print {
                 display: none !important;
             }
             body {
                 margin: 0;
+                padding: 0;
             }
-            .container {
+            /* Reseta para fundo branco na impressão */
+            body, .table {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            .container-fluid {
                 width: 100% !important;
+                padding: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container-fluid">
         <div class="report-header">
             <h1>Relatório de Vendas Perdidas</h1>
             <p class="text-muted">Gerado em: {{ report_time }}</p>
@@ -62,44 +94,57 @@
             {% endif %}
         {% endwith %}
 
-        <table class="table table-bordered table-striped">
-            <thead class="thead-light">
-                <tr>
-                    <th>Data/Hora</th>
-                    <th>Produto de Interesse</th>
-                    <th>Motivo</th>
-                    <th>Loja</th>
-                    <th>Responsável</th>
-                    <th>Comentário/Contato</th>
-                    <th class="no-print">Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if logs %}
-                    {% for log in logs %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="thead-dark">
                     <tr>
-                        <td>{{ log.timestamp }}</td>
-                        <td>{{ log.produto_interesse }}</td>
-                        <td>{{ log.motivo }}</td>
-                        <td>{{ log.loja }}</td>
-                        <td>{{ log.username }}</td>
-                        <td>{{ log.contato_cliente }}</td>
-                        <td class="no-print text-center">
-                            <form action="{{ url_for('delete_lost_sale_log', log_id=log.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover este registro? A ação não pode ser desfeita.');" style="display: inline;">
-                                <button type="submit" class="btn btn-danger btn-sm" title="Remover Registro">
-                                    <i class="fas fa-trash-alt"></i> Remover
-                                </button>
-                            </form>
-                        </td>
+                        <th>Data/Hora</th>
+                        <th>Produto de Interesse</th>
+                        <th>Motivo</th>
+                        <th>Loja</th>
+                        <th>Responsável</th>
+                        <th>Comentário/Contato</th>
+                        <th class="no-print">Ações</th>
                     </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center">Nenhum registro de venda perdida encontrado.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% if logs %}
+                        {# Dicionário para mapear nomes de usuário para nomes anônimos #}
+                        {% set user_map = {} %}
+                        {% set user_counter = {'value': 1} %}
+
+                        {% for log in logs %}
+                            {# Lógica para anonimizar o nome do usuário #}
+                            {% if log.username and log.username not in user_map %}
+                                {% if log.username|lower == 'adm' %}
+                                    {% do user_map.update({log.username: 'Admin'}) %}
+                                {% else %}
+                                    {% do user_map.update({log.username: 'Operador ' ~ user_counter.value}) %}
+                                    {% do user_counter.update({'value': user_counter.value + 1}) %}
+                                {% endif %}
+                            {% endif %}
+                        <tr>
+                            <td>{{ log.timestamp }}</td>
+                            <td>{{ log.produto_interesse }}</td>
+                            <td>{{ log.motivo }}</td>
+                            <td>{{ log.loja }}</td>
+                            <td>{{ user_map.get(log.username, 'N/A') }}</td>
+                            <td>{{ log.contato_cliente }}</td>
+                            <td class="no-print text-center">
+                                <form action="{{ url_for('delete_lost_sale_log', log_id=log.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover este registro? A ação não pode ser desfeita.');" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Remover Registro"><i class="fas fa-trash-alt"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhum registro de venda perdida encontrado.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
