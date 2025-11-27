@@ -3,13 +3,35 @@
 {% block title %}Resultados da Busca - {{ query }}{% endblock %}
 
 {% block head %}
+<style>
+    .card {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+    .search-section h5 {
+        border-bottom: 2px solid var(--bs-border-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-dark>
-        <h2 class="h4 mb-0">Resultados da Busca Global</h2>
-        <p class="mb-0 text-muted">Exibindo resultados para: <strong class="text-dark">"{{ query }}"</strong></p>
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Resultados da Busca Global</h2>
+            <p class="mb-0 text-muted">Exibindo resultados para: <strong>"{{ query }}"</strong></p>
+        </div>
+        <a href="#" id="searchHelp" title="Como funciona a busca?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
     </div>
     <div class="card-body">
         {% if not query %}
@@ -51,6 +73,10 @@
             <!-- Seção de Usuários (Apenas para Admins) -->
             {% if session.get('cargo') == 'Admin' %}
             <div class="search-section mb-5">
+                {# Dicionário para mapear nomes de usuário para nomes anônimos #}
+                {% set user_map = {} %}
+                {% set user_counter = {'value': 1} %}
+
                 <h5><i class="fas fa-users me-2 text-success"></i>Usuários</h5>
                 {% if results.users %}
                 <div class="table-responsive">
@@ -64,9 +90,18 @@
                         </thead>
                         <tbody>
                             {% for user in results.users %}
+                            {# Lógica para anonimizar o nome do usuário #}
+                            {% if user.username and user.username not in user_map %}
+                                {% if user.username|lower == 'adm' %}
+                                    {% do user_map.update({user.username: 'Admin'}) %}
+                                {% else %}
+                                    {% do user_map.update({user.username: 'Operador ' ~ user_counter.value}) %}
+                                    {% do user_counter.update({'value': user_counter.value + 1}) %}
+                                {% endif %}
+                            {% endif %}
                             <tr>
-                                <td><a href="{{ url_for('edit_user', user_id=user.id) }}">{{ user.username }}</a></td>
-                                <td>{{ user.nome_completo }}</td>
+                                <td><a href="{{ url_for('edit_user', user_id=user.id) }}">{{ user_map.get(user.username, 'N/A') }}</a></td>
+                                <td>{{ user_map.get(user.username, 'N/A') }}</td>
                                 <td>{{ user.cargo }}</td>
                             </tr>
                             {% endfor %}
@@ -95,4 +130,84 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-search me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const searchExplanation = [
+        {
+            title: "Como Funciona a Busca Global?",
+            content: `
+                <p>A busca global é uma ferramenta poderosa que procura o termo digitado em várias partes do sistema simultaneamente.</p>
+                <p>Ela organiza os resultados em três categorias:</p>
+                <ul>
+                    <li>
+                        <strong><i class="fas fa-box me-2 text-primary"></i>Produtos:</strong>
+                        Busca por correspondência no <strong>nome</strong>, <strong>código do produto</strong> ou nos <strong>últimos 5 dígitos do código de barras (EAN)</strong>.
+                    </li>
+                    <li>
+                        <strong><i class="fas fa-users me-2 text-success"></i>Usuários:</strong>
+                        (Visível apenas para Admins) Busca por correspondência no <strong>nome de usuário</strong> ou no <strong>nome completo</strong>.
+                    </li>
+                    <li>
+                        <strong><i class="fas fa-file-alt me-2 text-info"></i>Páginas e Relatórios:</strong>
+                        Busca por correspondência no <strong>título</strong> das principais páginas e relatórios do sistema, funcionando como um atalho rápido.
+                    </li>
+                </ul>
+                <p>A busca é insensível a maiúsculas/minúsculas e acentos, tornando-a mais flexível e fácil de usar.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('searchHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(searchExplanation);
+        });
+    }
+});
+</script>
 {% endblock %}
