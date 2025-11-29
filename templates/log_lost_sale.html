@@ -7,8 +7,13 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow-sm">
-                <div class="card-header">
-                    <h3 class="mb-0"><i class="fas fa-user-slash me-2"></i>Registrar Venda Perdida</h3>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0"><i class="fas fa-user-slash me-2"></i>Registrar Venda Perdida</h3>
+                    </div>
+                    <a href="#" id="lostSaleHelp" title="Para que serve esta página?">
+                        <i class="fas fa-question-circle fa-2x text-info"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <p class="card-text text-muted">Use este formulário para registrar quando um cliente procurou um item mas não finalizou a compra.</p>
@@ -81,6 +86,25 @@ document.addEventListener('DOMContentLoaded', function() {
         demoModal.show();
     }
 
+    const pageExplanation = [
+        {
+            title: "O que é 'Registrar Venda Perdida'?",
+            content: `
+                <p>Esta funcionalidade é uma ferramenta de <strong>Inteligência de Negócio (BI)</strong> para capturar informações valiosas sobre clientes que não concluíram uma compra.</p>
+                <p>O objetivo é entender <strong>por que</strong> as vendas não acontecem. Cada registro alimenta um painel de análise para a gestão.</p>
+                <h5>Quando usar?</h5>
+                <p>Use esta tela sempre que um cliente procurar por um produto e desistir da compra por algum motivo, como:</p>
+                <ul>
+                    <li>O preço estava muito alto.</li>
+                    <li>O produto estava em falta no estoque.</li>
+                    <li>O cliente não encontrou a marca ou o tamanho que desejava.</li>
+                </ul>
+                <p>Registrar esses eventos ajuda a identificar tendências e oportunidades de melhoria.</p>
+            `
+        }
+    ];
+
+
     const lostSaleSteps = [
         {
             title: "Passo 1: Coleta de Dados Estratégicos",
@@ -122,8 +146,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
-    // --- Conexão do Formulário com o Modal de Demonstração ---
-    const form = document.getElementById('lostSaleForm');
+    // --- Conexão dos Gatilhos com o Modal de Demonstração ---
+    const helpIcon = document.getElementById('lostSaleHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
+
+    const form = document.getElementById('lostSaleForm'); // Mantém a lógica do formulário
     if (form) {
         form.addEventListener('submit', function(event) {
             event.preventDefault(); // Impede o envio real do formulário
