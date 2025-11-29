@@ -264,15 +264,22 @@ def register():
             flash('As senhas não coincidem.', 'error')
             return render_template('register.html')
         
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cursor.execute(f"INSERT INTO {TABLE_USUARIOS} (username, password_hash, nome_completo, cargo, loja, nome_planilha, acesso_multiloja) VALUES (?, ?, ?, ?, ?, ?, ?)", (username, hashed_password, nome_completo, cargo, loja, username, 0))
-        conn.commit()
-        conn.close()
-        flash('Cadastro realizado com sucesso! Você já pode fazer login.', 'success')
-        logger_app.info(f"Novo usuário '{username}' cadastrado com sucesso.")
-        return redirect(url_for('login'))
+        try:
+            conn = sqlite3.connect(DATABASE_FILE)
+            cursor = conn.cursor()
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            cursor.execute(f"INSERT INTO {TABLE_USUARIOS} (username, password_hash, nome_completo, cargo, loja, nome_planilha, acesso_multiloja) VALUES (?, ?, ?, ?, ?, ?, ?)", (username, hashed_password, nome_completo, cargo, loja, username, 0))
+            conn.commit()
+            flash('Cadastro realizado com sucesso! Você já pode fazer login.', 'success')
+            logger_app.info(f"Novo usuário '{username}' cadastrado com sucesso.")
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Este nome de usuário já está em uso. Por favor, escolha outro.', 'danger')
+            logger_app.warning(f"Tentativa de registro falhou: username '{username}' já existe.")
+            return redirect(url_for('register'))
+        finally:
+            if 'conn' in locals() and conn:
+                conn.close()
 
     return render_template('register.html')
 
@@ -576,20 +583,32 @@ def init_user_db():
         )
     ''')
 
-    # Cria o usuário 'Adm' se não existir (senha: 122312)
+    # Cria o usuário 'admin' para demonstração se não existir (senha: admin)
     try:
-        cursor.execute(f"SELECT * FROM {TABLE_USUARIOS} WHERE username = ?", ('Adm',))
+        cursor.execute(f"SELECT * FROM {TABLE_USUARIOS} WHERE username = ?", ('admin',))
         if not cursor.fetchone():
-            hashed_password = generate_password_hash('122312', method='pbkdf2:sha256')
+            hashed_password = generate_password_hash('admin', method='pbkdf2:sha256')
             cursor.execute(f'''
                 INSERT INTO {TABLE_USUARIOS} (username, password_hash, nome_completo, cargo, loja, nome_planilha, acesso_multiloja)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', ('Adm', hashed_password, 'Administrador', 'Admin', 'LOJA 1', 'Adm', 1))
-            logger_app.info("Usuário 'Adm' criado com sucesso.")
+            ''', ('admin', hashed_password, 'Administrador de Teste', 'Admin', 'LOJA 1', 'admin', 1))
+            logger_app.info("Usuário de demonstração 'admin' criado com sucesso.")
     except sqlite3.IntegrityError:
-        logger_app.info("Usuário 'Adm' já existe.")
-    except Exception as e:
-        logger_app.error(f"Erro ao tentar criar usuário 'Adm': {e}")
+        logger_app.info("Usuário de demonstração 'admin' já existe.")
+
+    # Cria o usuário 'user' para demonstração se não existir (senha: user)
+    try:
+        cursor.execute(f"SELECT * FROM {TABLE_USUARIOS} WHERE username = ?", ('user',))
+        if not cursor.fetchone():
+            hashed_password = generate_password_hash('user', method='pbkdf2:sha256')
+            cursor.execute(f'''
+                INSERT INTO {TABLE_USUARIOS} (username, password_hash, nome_completo, cargo, loja, nome_planilha, acesso_multiloja)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', ('user', hashed_password, 'Operador de Teste', 'Operator', 'LOJA 1', 'user', 0))
+            logger_app.info("Usuário de demonstração 'user' criado com sucesso.")
+    except sqlite3.IntegrityError:
+        logger_app.info("Usuário de demonstração 'user' já existe.")
+
     
     conn.commit()
     conn.close()
