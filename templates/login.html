@@ -1,49 +1,63 @@
-{% extends "auth_base.html" %}
+{% extends "base.html" %}
 
-{% block title %}Login - AgroKa System{% endblock %}
+{% block title %}Login{% endblock %}
 
-{% block auth_content %}
-    <div class="text-center">
-        <h1 class="auth-header">Bem-vindo de volta!</h1>
-        <p class="auth-subheader">Faça login para acessar o sistema.</p>
-    </div>
+{% block head %}
+<style>
+    body {
+        background-color: #0c0c0cb2; /* Fundo escuro para a página de login */
+    }
+    .login-container {
+        max-width: 450px;
+        margin-top: 5vh;
+        animation: fadeIn 0.8s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .card-header h2 {
+        color: var(--bs-primary);
+    }
+</style>
+{% endblock %}
 
-     <div class="text-center">
-        <h1><i class="fas fa-smile me-2"></i></h1>
-    </div>
+{% block content %}
+<div class="container login-container">
+    <div class="card shadow-lg">
+        <div class="card-header text-center bg-dark">
+            <h2 class="mb-0"><i class="fas fa-tractor me-2"></i>AgroKa System</h2>
+        </div>
+        <div class="card-body p-4">
+            
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-info-circle"></i> Para Demonstração</h4>
+                <p>Use as credenciais abaixo para testar os diferentes perfis:</p>
+                <hr>
+                <p class="mb-1">
+                    <strong><i class="fas fa-user-shield"></i> Administrador:</strong><br>
+                    Usuário: <code>admin</code><br>
+                    Senha: <code>admin</code>
+                </p>
+                <p class="mb-0">
+                    <strong><i class="fas fa-user"></i> Operador:</strong><br>
+                    Usuário: <code>user</code><br>
+                    Senha: <code>user</code>
+                </p>
+            </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Nome de Usuário</label>
+                    <input type="text" class="form-control" id="username" name="username" required autofocus>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('login', next=request.args.get('next')) }}">
-        <div class="mb-3">
-            <label for="username" class="form-label">Usuário</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                <input type="text" class="form-control" id="username" name="username" required autofocus>
-            </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-sign-in-alt me-2"></i>Entrar</button>
+            </form>
         </div>
-        <div class="mb-4">
-            <label for="password" class="form-label">Senha</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-        </div>
-        <div class="d-grid">
-            <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
-        </div>
-    </form>
-
-    <div class="text-center mt-4">
-        <p class="text-muted mb-0">Não tem uma conta? <a href="{{ url_for('register') }}" class="auth-link">Registre-se</a></p>
     </div>
+</div>
 {% endblock %}
