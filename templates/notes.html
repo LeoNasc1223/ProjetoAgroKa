@@ -8,8 +8,11 @@
         <!-- Coluna para adicionar nova anotação -->
         <div class="col-md-4">
             <div class="card shadow-sm">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Nova Anotação</h4>
+                    <a href="#" id="notesHelp" title="Como funciona esta página?">
+                        <i class="fas fa-question-circle fa-2x text-info"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('notes') }}" id="note-form">
@@ -35,6 +38,10 @@
         <div class="col-md-8">
             <h2><i class="fas fa-sticky-note me-2"></i>Minhas Anotações</h2>
             <hr>
+            {# Dicionário para mapear nomes de usuário para nomes anônimos #}
+            {% set user_map = {} %}
+            {% set user_counter = {'value': 1} %}
+
             {% if notes %}
                 {% for note in notes %}
                 <div class="card mb-3">
@@ -47,8 +54,17 @@
                             <i class="fas fa-calendar-alt me-1"></i> {{ note.timestamp }}
                         </span>
                         {% if session.get('cargo') == 'Admin' %}
+                        {# Lógica para anonimizar o nome do usuário #}
+                        {% if note.username and note.username not in user_map %}
+                            {% if note.username|lower == 'adm' %}
+                                {% do user_map.update({note.username: 'Admin'}) %}
+                            {% else %}
+                                {% do user_map.update({note.username: 'Operador ' ~ user_counter.value}) %}
+                                {% do user_counter.update({'value': user_counter.value + 1}) %}
+                            {% endif %}
+                        {% endif %}
                         <span>
-                            <i class="fas fa-user me-1"></i> {{ note.username }}
+                            <i class="fas fa-user me-1"></i> {{ user_map.get(note.username, 'N/A') }}
                         </span>
                         {% endif %}
                     </div>
@@ -66,6 +82,105 @@
 
 {% block scripts %}
 {{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    function showDemoModal(steps) {
+        const step = steps[0]; // Esta tela só tem um passo de explicação
+        demoModalLabel.innerHTML = `<i class="fas fa-sticky-note me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+        demoModalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Como Funcionam as Anotações?",
+            content: `
+                <p>Esta página funciona como um <strong>bloco de notas digital</strong> associado a produtos específicos.</p>
+                <h5>Para que serve?</h5>
+                <ul>
+                    <li><strong>Lembretes Pessoais:</strong> "Verificar validade deste item amanhã".</li>
+                    <li><strong>Comunicação com a Equipe:</strong> "Cliente X reclamou da embalagem deste produto".</li>
+                    <li><strong>Observações de Estoque:</strong> "Este produto está com pouca saída, sugerir promoção".</li>
+                </ul>
+                <p>Operadores veem apenas suas próprias anotações, enquanto <strong>Administradores</strong> podem ver as anotações de todos os usuários, facilitando a comunicação e o gerenciamento de tarefas.</p>
+            `
+        }
+    ];
+
+    // --- Conexão dos Gatilhos com o Modal ---
+    const helpIcon = document.getElementById('notesHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
+
+    const noteForm = document.getElementById('note-form');
+    if (noteForm) {
+        noteForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio real do formulário
+
+            if (!noteForm.checkValidity()) {
+                noteForm.reportValidity();
+                return;
+            }
+
+            const productName = document.getElementById('product-search-notes').value;
+            const simulationSteps = [{
+                title: "Simulando Anotação",
+                content: `
+                    <p>Em um ambiente real, o sistema salvaria sua anotação para o produto <strong>${productName}</strong> no banco de dados.</p>
+                    <p>A nova anotação apareceria imediatamente na lista ao lado.</p>
+                    <p>Como este é um modo de demonstração, nenhuma anotação será salva.</p>
+                `
+            }];
+            showDemoModal(simulationSteps);
+        });
+    }
+
+    // --- LÓGICA ORIGINAL DA PÁGINA (BUSCA) ---
+    const searchInput = document.getElementById('product-search-notes');
+    const suggestionsDiv = document.getElementById('product-suggestions');
+    const hiddenCodeInput = document.getElementById('codigo_produto_hidden');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value;
+        hiddenCodeInput.value = ''; // Limpa o código se o usuário digitar novamente
+
+        if (query.length < 2) {
+            suggestionsDiv.innerHTML = '';
+            return;
+        }
+
+        fetch(`{{ url_for('api_product_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                suggestionsDiv.innerHTML = '';
+                data.forEach(product => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = product.label;
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        searchInput.value = product.label;
+                        hiddenCodeInput.value = product.codigo;
+                        suggestionsDiv.innerHTML = '';
+                    });
+                    suggestionsDiv.appendChild(item);
+                });
+            });
+    });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('product-search-notes');
@@ -109,4 +224,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
 {% endblock %}
