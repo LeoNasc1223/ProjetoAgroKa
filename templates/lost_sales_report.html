@@ -165,35 +165,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- LÓGICA ORIGINAL DO GRÁFICO ---
     // (O código do gráfico é movido para dentro deste listener)
-});
-</script>
-<script>
     const ctx = document.getElementById('reasonsChart');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {{ data.reasons_chart.labels|tojson }},
-            datasets: [{
-                label: '# de Ocorrências',
-                data: {{ data.reasons_chart.data|tojson }},
-                borderWidth: 1,
-                backgroundColor: 'rgba(0, 123, 255, 0.5)',
-                borderColor: 'rgba(0, 123, 255, 1)'
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            scales: {
-                x: {
-                    beginAtZero: true
-                }
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ data.reasons_chart.labels|tojson }},
+                datasets: [{
+                    label: '# de Ocorrências',
+                    data: {{ data.reasons_chart.data|tojson }},
+                    borderWidth: 1,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                    borderColor: 'rgba(0, 123, 255, 1)'
+                }]
             },
-            plugins: {
-                legend: {
-                    display: false
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
                 }
             }
-        }
-    });
+        });
+    }
+});
 </script>
 {% endblock %}
