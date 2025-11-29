@@ -4,8 +4,13 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-clipboard-check me-2"></i>Revisão de Vendas Pendentes</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0 me-3"><i class="fas fa-clipboard-check me-2"></i>Revisão de Vendas Pendentes</h2>
+            <a href="#" id="reviewSalesHelp" title="Como funciona esta página?">
+                <i class="fas fa-question-circle fa-2x text-info"></i>
+            </a>
+        </div>
         {% if session.get('cargo') == 'Admin' %}
         <a href="{{ url_for('dismissed_sales_log') }}" class="btn btn-outline-secondary">
             <i class="fas fa-history me-2"></i>Ver Avisos Descartados
@@ -172,6 +177,29 @@ document.addEventListener('DOMContentLoaded', function () {
         demoModal.show();
     }
 
+    const pageExplanation = [
+        {
+            title: "O que é a Revisão de Vendas?",
+            content: `
+                <p>Esta página é o centro de controle para validar as vendas detectadas automaticamente pelo sistema.</p>
+                <h5>Como funciona?</h5>
+                <p>Após cada atualização do E-Trade, o sistema compara o estoque anterior com o novo. Se o estoque de um produto diminuiu, ele cria um <strong>aviso de venda pendente</strong> que aparece aqui.</p>
+                <h5>Sua Tarefa:</h5>
+                <ol>
+                    <li><strong>Verificar a Lista:</strong> Analise os produtos listados.</li>
+                    <li><strong>Informar Estoque de Prateleira:</strong> Para cada item que você deseja processar, informe a quantidade atual na prateleira.</li>
+                    <li><strong>Processar ou Descartar:</strong>
+                        <ul>
+                            <li><strong>Processar Selecionados:</strong> Inicia o fluxo de trabalho para reposição ou compra do item.</li>
+                            <li><strong>Descartar Selecionados:</strong> Remove o aviso da lista, útil para casos de erro ou movimentação interna que não foi uma venda real.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>Processar os itens aqui é o que alimenta o <strong>Relatório de Histórico de Vendas</strong> e outras análises.</p>
+            `
+        }
+    ];
+
     const processSteps = [
         {
             title: "Passo 1: Coleta e Validação",
@@ -230,6 +258,15 @@ document.addEventListener('DOMContentLoaded', function () {
             `
         }
     ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('reviewSalesHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
 
     // Validação do formulário antes do envio
     if (form) {
