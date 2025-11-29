@@ -7,8 +7,11 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0"><i class="fas fa-rocket me-2"></i>Guia de Automação: Atualizar Banco de Dados E-Trade</h3>
+                    <a href="#" id="automationGuideHelp" title="Para que serve este guia?">
+                        <i class="fas fa-question-circle fa-2x text-info"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="progress mb-4" style="height: 25px;">
@@ -100,6 +103,27 @@ document.addEventListener('DOMContentLoaded', function() {
         demoModal.show();
     }
 
+    const pageExplanation = [
+        {
+            title: "Como funciona a Automação?",
+            content: `
+                <p>Idealmente, este sistema se conectaria diretamente ao banco de dados do caixa (E-Trade) através de uma API para obter dados de estoque em tempo real.</p>
+                <p>Como não foi possível obter acesso a essa API ou ao banco de dados, foi desenvolvida uma solução alternativa: uma <strong>Automação de Processos Robóticos (RPA)</strong> para simular a extração manual de dados.</p>
+                
+                <h5>O Processo de Automação</h5>
+                <p>Esta página guia o usuário para preparar o ambiente para o robô. Ao clicar em "Iniciar Automação Agora", o sistema executa os seguintes passos:</p>
+                <ol>
+                    <li><strong>Comando Remoto:</strong> A aplicação web envia um comando para um agente local (um programa rodando na máquina do cliente).</li>
+                    <li><strong>Ação do Robô (RPA):</strong> O agente assume o controle do mouse e teclado, abre o sistema E-Trade, navega até a tela de produtos, seleciona tudo (Ctrl+A) e copia para a área de transferência (Ctrl+C).</li>
+                    <li><strong>Envio e Processamento:</strong> Os dados copiados são enviados de volta para a aplicação web, que os limpa, estrutura e atualiza seu próprio banco de dados.</li>
+                    <li><strong>Detecção de Vendas:</strong> O sistema compara o estoque antigo com o novo para identificar vendas, que são então enviadas para a tela de revisão.</li>
+                </ol>
+                <p class="text-center bg-dark p-2 rounded">Em um ambiente de produção real, este processo seria totalmente automático rodando em um servidor dedicado.</p>
+            `
+        }
+    ];
+
+
     const automationSteps = [
         {
             title: "Passo 1: O Gatilho",
@@ -150,6 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
 
     // --- Conexão do Botão com o Modal de Demonstração ---
+    const helpIcon = document.getElementById('automationGuideHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
+
     const runBtn = document.getElementById('run-automation-btn');
     if (runBtn) {
         runBtn.addEventListener('click', function(event) {
