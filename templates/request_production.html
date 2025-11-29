@@ -34,8 +34,13 @@
 {% block content %}
 <div class="container mt-4">
     <div class="card">
-        <div class="card-header">
-            <h3><i class="fas fa-cogs me-2"></i>Solicitar Produção de Item Fracionado</h3>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="mb-0"><i class="fas fa-cogs me-2"></i>Solicitar Produção de Item Fracionado</h3>
+            </div>
+            <a href="#" id="productionHelp" title="Como funciona esta página?">
+                <i class="fas fa-question-circle fa-2x text-info"></i>
+            </a>
         </div>
         <div class="card-body">
             <p class="card-text">Use este formulário para solicitar a quebra de um produto maior (saco) em pacotes menores para venda.</p>
@@ -147,6 +152,22 @@ document.addEventListener('DOMContentLoaded', function() {
         demoModal.show();
     }
 
+    const pageExplanation = [
+        {
+            title: "O que é 'Solicitar Produção'?",
+            content: `
+                <p>Esta página é usada para solicitar a <strong>produção de itens fracionados</strong>, ou seja, a quebra de um produto de grande volume (como um saco de 50KG) em pacotes menores para venda (como pacotes de 2.5KG).</p>
+                <h5>Como funciona?</h5>
+                <ol>
+                    <li>Selecione o <strong>produto a ser criado</strong> (pacote menor).</li>
+                    <li>Selecione o <strong>produto de origem</strong> (saco maior).</li>
+                    <li>O sistema calcula automaticamente quantos pacotes menores podem ser feitos.</li>
+                    <li>Ao enviar, uma solicitação é criada na planilha de 'PRODUÇÃO', mas <strong>o estoque não é alterado automaticamente</strong>.</li>
+                </ol>
+                <p>A alteração do estoque é um processo manual realizado pela equipe de produção após a quebra física do produto, garantindo um controle mais rigoroso.</p>`
+        }
+    ];
+
     const productionSteps = [
         {
             title: "Passo 1: Seleção e Cálculo",
@@ -189,6 +210,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('productionHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
     // --- LÓGICA EXISTENTE DA PÁGINA ---
 
     // Função de debounce para evitar chamadas excessivas à API
