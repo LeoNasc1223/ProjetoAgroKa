@@ -40,9 +40,14 @@
 
 {% block content %}
 <div class="main-container container-fluid">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Olá, {{ username }}!</h1>
-        <p class="text-muted mb-0">Um resumo da sua atividade no sistema.</p>
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <h1 class="h2 mb-0 me-3">Olá, {{ username }}!</h1>
+            <a href="#" id="dashboardHelp" title="Como funciona este dashboard?">
+                <i class="fas fa-question-circle fa-2x text-info"></i>
+            </a>
+        </div>
+        <p class="text-muted mb-0 ms-md-auto">Um resumo da sua atividade no sistema.</p>
     </div>
 
     <div class="row">
@@ -114,18 +119,92 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- 
-    # Exemplo de como os dados para o gráfico devem ser estruturados no seu app.py:
-    dashboard_data['entries_by_day'] = [
-        {'date': '2024-05-15', 'count': 10},
-        {'date': '2024-05-16', 'count': 15},
-        {'date': '2024-05-17', 'count': 8},
-        # ... etc para os últimos 7 dias
-    ]
--->
+{{ super() }}
 <script>
-    // Passa os dados do Flask para o JavaScript de forma segura
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    function showDemoModal(steps) {
+        const step = steps[0]; // Esta tela só tem um passo de explicação
+        demoModalLabel.innerHTML = `<i class="fas fa-tachometer-alt me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+        demoModalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Entendendo o Seu Dashboard",
+            content: `
+                <p>Este é o seu painel de controle pessoal, projetado para que você possa acompanhar sua produtividade e suas atividades recentes.</p>
+                <h5>Componentes do Dashboard:</h5>
+                <ul>
+                    <li>
+                        <strong>Cartões de Estatísticas:</strong> Mostram um resumo rápido das suas entradas de dados, tanto no dia de hoje quanto na última semana.
+                    </li>
+                    <li>
+                        <strong>Gráfico de Atividade:</strong> Exibe um gráfico de barras com o número de registros que você fez em cada um dos últimos 7 dias. É uma ótima forma de visualizar sua consistência.
+                    </li>
+                    <li>
+                        <strong>Últimas Entradas:</strong> Uma lista com os seus 5 registros mais recentes, permitindo que você revise rapidamente suas últimas ações.
+                    </li>
+                </ul>
+                <p>Use o botão "Ver Todos os Meus Registros" para acessar um histórico completo e filtrável de todas as suas entradas.</p>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('dashboardHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(pageExplanation);
+        });
+    }
+
+    // --- LÓGICA ORIGINAL DA PÁGINA (GRÁFICO) ---
     const chartData = {{ dashboard_data.entries_by_day | tojson }};
+    const ctx = document.getElementById('entriesByDayChart');
+
+    if (ctx && chartData) {
+        // Formata as labels para o formato DD/MM
+        const formattedLabels = chartData.labels.map(dateStr => {
+            const date = new Date(dateStr + 'T00:00:00'); // Adiciona T00:00:00 para evitar problemas de fuso horário
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${day}/${month}`;
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: formattedLabels,
+                datasets: [{
+                    label: 'Registros',
+                    data: chartData.data,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 } // Garante que o eixo Y mostre apenas números inteiros
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+});
 </script>
-<script src="{{ url_for('static', filename='js/operator_dashboard_charts.js') }}"></script>
 {% endblock %}
