@@ -4,7 +4,7 @@
 Implementar suporte a português e inglês no sistema, com opção de troca de idioma na interface e comentários de código em ambos os idiomas.
 
 ## Plano diário
-- [ ] Dia 1: Criar infraestrutura de tradução
+- [x] Dia 1: Criar infraestrutura de tradução
   - Criar `translations.py` ou arquivo de strings traduzíveis
   - Adicionar helper de tradução em `app.py`
   - Criar rota/handler para trocar idioma em `session['lang']`
