@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Avisos de Venda Descartados{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-history"></i> Avisos de Venda Descartados</h2>
+        <a href="{{ url_for('review_sales') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar para Revisão de Vendas
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th>Qtd. Vendida</th>
+                            <th class="text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.data_verificacao.split(' ')[0] }}</td>
+                            <td>{{ log.codigo_produto }}</td>
+                            <td>{{ log.nome_produto }}</td>
+                            <td>{{ log.quantidade_vendida }}</td>
+                            <td class="text-center">
+                                <form action="{{ url_for('restore_sale_log', log_id=log.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-success btn-sm" title="Restaurar para a lista de pendentes">
+                                        <i class="fas fa-undo"></i> Restaurar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                Não há avisos de venda descartados para exibir.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

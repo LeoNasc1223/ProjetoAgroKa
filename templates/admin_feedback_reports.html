@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios de Feedback - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="mb-1">Relatórios de Feedback</h1>
+            <p class="text-muted mb-0">Aqui você pode visualizar e responder aos feedbacks enviados pelos usuários.</p>
+        </div>
+        <a href="#" id="feedbackHelp" title="Como funciona esta página?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if feedbacks %}
+        <div class="accordion" id="feedbackAccordion">
+            {% for feedback in feedbacks %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ feedback.id }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ feedback.id }}" aria-expanded="false" aria-controls="collapse{{ feedback.id }}">
+                        <span class="badge bg-{{ 'secondary' if feedback.status == 'pendente' else 'info' if feedback.status == 'em_analise' else 'success' if feedback.status == 'resolvido' else 'danger' }} me-2">{{ feedback.status|replace('_', ' ')|title }}</span>
+                        <strong>{{ feedback.subject }}</strong> <span class="ms-auto text-muted small">por {{ feedback.username }} em {{ feedback.timestamp.split(' ')[0] }}</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ feedback.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ feedback.id }}" data-bs-parent="#feedbackAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Tipo:</strong> {{ feedback.feedback_type|title }}</p>
+                        <p><strong>Descrição:</strong></p>
+                        <p style="white-space: pre-wrap;">{{ feedback.description }}</p>
+                        <hr>
+                        
+                        {% if feedback.admin_response %}
+                        <div class="alert alert-light">
+                            <h5>Resposta do Administrador</h5>
+                            <p><strong>Respondido por:</strong> {{ feedback.response_username }} em {{ feedback.response_timestamp }}</p>
+                            <p style="white-space: pre-wrap;">{{ feedback.admin_response }}</p>
+                        </div>
+                        {% endif %}
+
+                        <h5 class="mt-4">Responder ou Atualizar Status</h5>
+                        <form class="feedback-response-form" action="{{ url_for('update_feedback_report', feedback_id=feedback.id) }}" method="POST">
+                            <div class="mb-3">
+                                <label for="admin_response_{{ feedback.id }}" class="form-label">Sua Resposta</label>
+                                <textarea class="form-control" id="admin_response_{{ feedback.id }}" name="admin_response" rows="3" required>{{ feedback.admin_response or '' }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="status_{{ feedback.id }}" class="form-label">Alterar Status</label>
+                                <select class="form-select" id="status_{{ feedback.id }}" name="status" required>
+                                    <option value="pendente" {% if feedback.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                    <option value="em_analise" {% if feedback.status == 'em_analise' %}selected{% endif %}>Em Análise</option>
+                                    <option value="resolvido" {% if feedback.status == 'resolvido' %}selected{% endif %}>Resolvido</option>
+                                    <option value="rejeitado" {% if feedback.status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enviar Resposta</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">
+            <p class="mb-0">Nenhum feedback foi enviado até o momento.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-comments me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const pageExplanation = [
+        {
+            title: "Gerenciando Feedbacks",
+            content: `
+                <p>Esta página centraliza todas as <strong>sugestões e problemas</strong> reportados pelos usuários do sistema.</p>
+                <p>O objetivo é criar um canal de comunicação direto entre os operadores e a administração, permitindo a melhoria contínua do sistema e dos processos.</p>
+                <p>Cada item pode ser expandido para visualizar os detalhes e fornecer uma resposta, que será notificada ao usuário original.</p>
+            `
+        }
+    ];
+
+    const responseSteps = [
+        {
+            title: "Passo 1: Análise e Resposta",
+            content: `
+                <p>Ao clicar em "Enviar Resposta", o sistema primeiro coleta os dados que você forneceu:</p>
+                <ul>
+                    <li>O texto da sua <strong>resposta</strong>.</li>
+                    <li>O novo <strong>status</strong> do feedback (ex: 'Em Análise', 'Resolvido').</li>
+                </ul>
+            `
+        },
+        {
+            title: "Passo 2: Atualização no Banco de Dados",
+            content: `
+                <p>O sistema atualiza o registro de feedback no banco de dados, adicionando sua resposta, seu nome de usuário e a data/hora da resposta. O status do feedback também é atualizado.</p>
+                <p>Isso mantém um histórico completo de toda a comunicação relacionada ao problema ou sugestão.</p>
+            `
+        },
+        {
+            title: "Passo 3: Notificação ao Usuário",
+            content: `
+                <p>Para fechar o ciclo de comunicação, o sistema cria automaticamente uma <strong>notificação interna</strong> para o usuário que enviou o feedback originalmente.</p>
+                <p>Essa notificação aparecerá no ícone de sino <i class="fas fa-bell"></i> no menu do usuário, informando que sua solicitação foi respondida e permitindo que ele veja sua mensagem.</p>
+            `
+        }
+    ];
+
+    // --- Conexão dos Gatilhos com o Modal ---
+    document.getElementById('feedbackHelp').addEventListener('click', function(e) {
+        e.preventDefault();
+        showDemoModal(pageExplanation);
+    });
+
+    document.querySelectorAll('.feedback-response-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            showDemoModal(responseSteps);
+        });
+    });
+});
+</script>
+{% endblock %}
