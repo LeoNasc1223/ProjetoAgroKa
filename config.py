@@ -29,9 +29,9 @@ TOP_SELLING_COUNT = 20 # Number of top selling products to consider
 SALES_ANALYSIS_PERIOD_DAYS = 30 # Default period for "Days of Stock Remaining" calculation
 
 # --- Email Configuration (for notifications) ---
-EMAIL_SENDER = os.environ.get('EMAIL_SENDER') # Lê da variável de ambiente
-EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD') # Lê da variável de ambiente
-EMAIL_RECEIVER = os.environ.get('EMAIL_RECEIVER') # Lê da variável de ambiente
+EMAIL_SENDER = os.environ.get('EMAIL_SENDER', 'seu_email@gmail.com') # Lê da variável de ambiente
+EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', 'sua_senha') # Lê da variável de ambiente
+EMAIL_RECEIVER = os.environ.get('EMAIL_RECEIVER', 'admin@empresa.com') # Lê da variável de ambiente
 SMTP_SERVER = 'smtp.gmail.com' # Ex: 'smtp.gmail.com' para Gmail
 SMTP_PORT = 587 # Porta padrão para TLS/STARTTLS
 

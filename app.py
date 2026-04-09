@@ -215,7 +215,6 @@ def login():
             session['username'] = user[1]
             session['nome_completo'] = user[3]
             session['cargo'] = user[4]
-            session['nome_compras'] = user[5] # Adiciona nome para compras à sessão
             session['loja'] = user[5] 
             session['nome_planilha'] = user[6] # Adiciona o nome da planilha
             session['acesso_multiloja'] = user[7] # Adiciona a permissão de multiloja
