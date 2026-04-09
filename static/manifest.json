@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "AgroKa System App",
   "short_name": "AgroKa",
@@ -20,4 +21,28 @@
       "purpose": "any maskable"
     }
   ]
+=======
+{
+  "name": "AgroKa System App",
+  "short_name": "AgroKa",
+  "description": "Sistema de gerenciamento de estoque e reposição AgroKa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "/static/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+>>>>>>> a2c8492483ee7245b6928a24900d17788b671f95
 }

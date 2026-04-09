@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "base.html" %}
 
 {% block title %}Relatório Histórico de Vendas{% endblock %}
@@ -196,3 +197,203 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+=======
+{% extends "base.html" %}
+
+{% block title %}Relatório Histórico de Vendas{% endblock %}
+
+{% block head %}
+<style>
+    .card {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h4 mb-0">Relatório Histórico de Vendas</h2>
+            <p class="mb-0 text-muted">Visualize as vendas processadas pelo sistema. O valor é calculado com base no preço <strong>atual</strong> do produto.</p>
+        </div>
+        <a href="#" id="salesHistoryHelp" title="Como funciona este relatório?">
+            <i class="fas fa-question-circle fa-2x text-info"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="p-3 mb-4 rounded" style="background-color: var(--bs-tertiary-bg);">
+            <form method="GET" action="{{ url_for('report_sales_history') }}" class="mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md">
+                        <label for="start_date" class="form-label">Data de Início</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                    </div>
+                    <div class="col-md">
+                        <label for="end_date" class="form-label">Data de Fim</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-1"></i>Filtrar</button>
+                        {% if sales_history %}
+                        <a href="{{ url_for('export_sales_history_csv', start_date=start_date, end_date=end_date) }}" class="btn btn-success ms-2"><i class="fas fa-file-csv me-1"></i>Exportar CSV</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+            <input type="text" id="salesHistorySearch" class="form-control" placeholder="Filtrar resultados por produto ou código...">
+        </div>
+
+        {% if sales_history %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Data da Venda</th>
+                        <th scope="col">Código</th>
+                        <th scope="col">Produto</th>
+                        <th scope="col" class="text-center">Qtd. Vendida</th>
+                        <th scope="col" class="text-end">Preço Unit. (Atual)</th>
+                        <th scope="col" class="text-end">Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody id="salesHistoryTableBody">
+                    {% for sale in sales_history %}
+                    <tr>
+                        <td>{{ sale.data_verificacao.split(' ')[0] }}</td>
+                        <td><a href="{{ url_for('product_detail', codigo_produto=sale.codigo_produto) }}">{{ sale.codigo_produto }}</a></td>
+                        <td>{{ sale.nome_produto }}</td>
+                        <td class="text-center">{{ sale.quantidade_vendida }}</td>
+                        <td class="text-end">
+                            {% if sale.preco is not none %}
+                                R$ {{ "%.2f"|format(sale.preco|float) }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if sale.preco is not none %}
+                                R$ {{ "%.2f"|format(sale.quantidade_vendida * sale.preco|float) }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-group-divider">
+                    <tr>
+                        <td colspan="5" class="text-end fw-bold">Valor Total do Período:</td>
+                        <td class="text-end fw-bold">R$ {{ "%.2f"|format(total_value|float) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle me-2"></i>Nenhum registro de venda processada encontrado para o período selecionado.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE DEMONSTRAÇÃO PADRÃO ---
+    const demoModal = new bootstrap.Modal(document.getElementById('demoModal'));
+    const demoModalBody = document.getElementById('demoModalBody');
+    const demoModalFooter = document.getElementById('demoModalFooter');
+    const demoModalLabel = document.getElementById('demoModalLabel');
+
+    let currentDemoStep = 0;
+    let currentDemoSteps = [];
+
+    function updateDemoModalContent() {
+        const step = currentDemoSteps[currentDemoStep];
+        demoModalLabel.innerHTML = `<i class="fas fa-history me-2"></i> ${step.title}`;
+        demoModalBody.innerHTML = step.content;
+
+        let footerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>';
+        if (currentDemoSteps.length > 1) {
+            footerHTML = `<button type="button" class="btn btn-outline-secondary" id="prevBtn" ${currentDemoStep === 0 ? 'disabled' : ''}>Anterior</button>` + footerHTML;
+            footerHTML += `<button type="button" class="btn btn-primary" id="nextBtn" ${currentDemoStep === currentDemoSteps.length - 1 ? 'disabled' : ''}>Próximo</button>`;
+        }
+        demoModalFooter.innerHTML = footerHTML;
+    }
+
+    document.getElementById('demoModal').addEventListener('click', function handler(event) {
+        if (event.target.id === 'nextBtn' && currentDemoStep < currentDemoSteps.length - 1) {
+            currentDemoStep++;
+            updateDemoModalContent();
+        } else if (event.target.id === 'prevBtn' && currentDemoStep > 0) {
+            currentDemoStep--;
+            updateDemoModalContent();
+        }
+    });
+
+    function showDemoModal(steps, startIndex = 0) {
+        currentDemoSteps = steps;
+        currentDemoStep = startIndex;
+        updateDemoModalContent();
+        demoModal.show();
+    }
+
+    const salesHistoryExplanation = [
+        {
+            title: "Como Funciona o Histórico de Vendas?",
+            content: `
+                <p>Este relatório exibe um registro detalhado de todas as vendas que foram <strong>processadas</strong> através da tela de 'Revisar Vendas'. Ele é fundamental para entender o fluxo de saída dos produtos e para análises financeiras.</p>
+                <h5>Pontos Importantes:</h5>
+                <ul>
+                    <li><strong>Filtro de Período:</strong> Você pode definir um intervalo de datas para focar sua análise em um período específico.</li>
+                    <li><strong>Preço Atual:</strong> O 'Preço Unit.' e o 'Valor Total' são calculados usando o preço <strong>atual</strong> do produto no sistema, não o preço no momento da venda. Isso é útil para estimar o faturamento se as mesmas vendas ocorressem hoje.</li>
+                    <li><strong>Exportação:</strong> Você pode exportar todos os dados do período selecionado para um arquivo CSV, facilitando a análise em outras ferramentas como Excel ou Google Sheets.</li>
+                </ul>
+            `
+        }
+    ];
+
+    // --- Conexão do Ícone de Ajuda com o Modal ---
+    const helpIcon = document.getElementById('salesHistoryHelp');
+    if (helpIcon) {
+        helpIcon.addEventListener('click', function(event) {
+            event.preventDefault();
+            showDemoModal(salesHistoryExplanation);
+        });
+    }
+
+    // --- Lógica Original da Página (Filtro) ---
+    const searchInput = document.getElementById('salesHistorySearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            let filter = this.value.toUpperCase();
+            let tableBody = document.getElementById('salesHistoryTableBody');
+            let rows = tableBody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                if (cells.length > 0) {
+                    if ((cells[1] && cells[1].textContent.toUpperCase().indexOf(filter) > -1) ||
+                        (cells[2] && cells[2].textContent.toUpperCase().indexOf(filter) > -1)) {
+                        found = true;
+                    }
+                    rows[i].style.display = found ? "" : "none";
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+>>>>>>> a2c8492483ee7245b6928a24900d17788b671f95
