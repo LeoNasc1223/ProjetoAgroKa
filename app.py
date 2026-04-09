@@ -1,4 +1,3 @@
-#teste
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, flash, make_response
 import sqlite3
 import logging
@@ -22,12 +21,9 @@ import unicodedata
 import datetime
 from collections import deque
 
-
-
 # Importar configurações e funções de outros módulos
 from config import DATABASE_FILE, TABLE_PRODUTOS_ETRADE, TABLE_PRODUTOS_ETRADE_STAGING, TABLE_USUARIOS, TABLE_LOG_ENTRADAS_PRATELEIRA, TABLE_PRODUTOS_VENDIDOS_LOG, TABLE_LOTES_PRODUTOS, TABLE_LOG_AJUSTES_ESTOQUE, TABLE_FEEDBACK, TABLE_AUDIT_LOG, TABLE_PRICE_HISTORY, TABLE_SETTINGS, TABLE_NOTIFICATIONS, EMAIL_SENDER, EMAIL_PASSWORD, EMAIL_RECEIVER, SMTP_SERVER, SMTP_PORT, TABLE_ANOTACOES, TABLE_STOCK_CORRECTION_LOG, TABLE_LOST_SALES_LOG, TABLE_LOG_PRODUCAO, NGROK_STATIC_DOMAIN
 from main_logic import processar_entrada_unica, calculate_days_of_stock_remaining, SALES_ANALYSIS_PERIOD_DAYS
-from translations import TRANSLATIONS, DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
 from utils import log_audit # Importa a função de log do módulo de utilitários
 
 app = Flask(__name__)
@@ -71,54 +67,16 @@ def is_etrade_running():
             return True
     return False
 
-def get_locale():
-    """Retorna o idioma atual salvo na sessão ou o idioma padrão."""
-    lang = session.get('lang', DEFAULT_LANGUAGE)
-    if lang not in SUPPORTED_LANGUAGES:
-        lang = DEFAULT_LANGUAGE
-    return lang
-
-
-def translate(key, **kwargs):
-    """Retorna o texto traduzido para a chave informada."""
-    lang = get_locale()
-    text = TRANSLATIONS.get(lang, {}).get(key)
-    if text is None:
-        text = TRANSLATIONS.get(DEFAULT_LANGUAGE, {}).get(key, key)
-    if kwargs:
-        try:
-            return text.format(**kwargs)
-        except Exception:
-            return text
-    return text
-
-
 @app.context_processor
 def inject_current_year():
-    """Injeta variáveis comuns em todos os templates."""
-    return {
-        'current_year': datetime.date.today().year,
-        'current_lang': get_locale(),
-        'supported_languages': SUPPORTED_LANGUAGES,
-        'translate': translate,
-    }
-
-
-@app.route('/set_language/<language_code>')
-def set_language(language_code):
-    """Define o idioma da sessão e redireciona para a página anterior."""
-    if language_code not in SUPPORTED_LANGUAGES:
-        language_code = DEFAULT_LANGUAGE
-    session['lang'] = language_code
-    next_url = request.referrer or url_for('index')
-    return redirect(next_url)
-
+    """Injeta o ano atual em todos os templates."""
+    return {'current_year': datetime.date.today().year}
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            flash(translate('please_login'), 'warning')
+            flash('Por favor, faça login para acessar esta página.', 'warning')
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
@@ -270,7 +228,7 @@ def login():
             return redirect(url_for('index'))
         else:
             log_audit('login_failed', f"Tentativa de login falhou para o usuário '{username}'", username=username)
-            flash(translate('invalid_credentials'), 'error')
+            flash('Nome de usuário ou senha inválidos.', 'error')
             logger_app.warning(f"Tentativa de login falhou para o usuário '{username}'.")
 
     if 'user_id' in session:

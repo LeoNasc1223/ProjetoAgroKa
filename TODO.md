@@ -1,45 +1,17 @@
-# TODO: Versão bilíngue PT/EN
+# TODO: Transformar site em demonstração não funcional
 
 ## Objetivo
-Implementar suporte a português e inglês no sistema, com opção de troca de idioma na interface e comentários de código em ambos os idiomas.
+Transformar o site em uma demonstração para GitHub, onde botões que executariam ações externas abrem caixas de diálogo explicando detalhadamente o que a ação faria. Para elementos não funcionais, adicionar ícones de interrogação que explicam o que aconteceria.
 
-## Plano diário
-- [x] Dia 1: Criar infraestrutura de tradução
-  - Criar `translations.py` ou arquivo de strings traduzíveis
-  - Adicionar helper de tradução em `app.py`
-  - Criar rota/handler para trocar idioma em `session['lang']`
-  - Commit: `feat: add language infrastructure and translation helper`
+## Arquivos a modificar
+- [ ] Modificar templates/base.html: Adicionar modal genérico para explicações
+- [ ] Modificar templates/index.html: Adicionar ícones ? ao lado de checkboxes, interceptar submit do formulário
+- [ ] Modificar static/css/style.css: Adicionar estilos para ícones de interrogação
+- [ ] Testar a demonstração em index.html
+- [ ] Aplicar mudanças similares a outras páginas se necessário (review_sales.html, product_detail.html, etc.)
 
-- [ ] Dia 2: Adicionar seletor de idioma na interface
-  - Modificar `templates/base.html` para incluir botão ou dropdown de idioma
-  - Salvar preferência do usuário em sessão/cookie
-  - Commit: `feat: add language selector in navbar`
-
-- [ ] Dia 3: Traduzir base e navegação
-  - Traduzir menu principal e links do `base.html`
-  - Traduzir textos do rodapé, notificações e mensagens gerais
-  - Commit: `feat: translate base layout and navigation`
-
-- [ ] Dia 4: Traduzir login e mensagens do usuário
-  - Traduzir `templates/login.html` e `templates/register.html`
-  - Traduzir mensagens de validação e `flash()` em `app.py`
-  - Commit: `feat: translate auth pages and flash messages`
-
-- [ ] Dia 5: Traduzir páginas principais do sistema
-  - Traduzir dashboards, detalhes de produto, relatórios e pesquisa global
-  - Extrair todas as strings fixas para o arquivo de tradução
-  - Commit: `feat: translate main pages content`
-
-- [ ] Dia 6: Traduzir botões, labels, formulários e JS
-  - Atualizar textos de botões, labels, tabelas e tooltips
-  - Verificar `static/js` e traduzir strings estáticas visíveis
-  - Commit: `feat: translate buttons, labels and UI text`
-
-- [ ] Dia 7: Comentários bilíngues no código
-  - Adicionar comentários em PT e EN nos arquivos principais (`app.py`, `main_logic.py`, `utils.py`, `config.py`)
-  - Commit: `docs: add bilingual comments to code`
-
-- [ ] Dia 8: Documentação e revisão final
-  - Atualizar `README.md` com instruções em PT e EN
-  - Testar troca de idioma e corrigir pequenos detalhes
-  - Commit: `docs: update README and polish language support`
+## Detalhes das explicações
+- Botão "Registrar Entrada": Explicar leitura de campos, verificação no banco, cálculo de backstock, atualização de planilhas, etc.
+- Checkbox "Sugerir compra mesmo com estoque no depósito": Explicar que marcaria produto na planilha de compras mesmo com estoque
+- Checkbox "Marcar produto na planilha contrária": Explicar inversão PET/Loja
+- Botão "Ler Código de Barras": Manter scanner ou mostrar explicação demo

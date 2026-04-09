@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Arquivos de Bytecode e Cache do Python
 __pycache__/
 *.pyc
@@ -30,37 +29,4 @@ ultima_atualizacao_etrade.txt
 
 # Arquivos específicos de IDEs/Editores
 .vscode/
-=======
-# Arquivos de Bytecode e Cache do Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Ambientes Virtuais
-venv/
-.venv/
-env/
-
-# Arquivos de Banco de Dados
-# O seu arquivo de banco de dados principal.
-entradas_web.db
-*.sqlite3
-
-# Arquivos de configuração que podem conter segredos
-# O arquivo de configuração do seu agente não deve ser versionado.
-agent_config.ini
-.env
-
-# Arquivos de Log
-*.log
-logs/
-
-# Arquivos de status e temporários gerados pela aplicação
-automation_status.txt
-ultima_atualizacao_etrade.txt
-
-# Arquivos específicos de IDEs/Editores
-.vscode/
->>>>>>> a2c8492483ee7245b6928a24900d17788b671f95
 .idea/

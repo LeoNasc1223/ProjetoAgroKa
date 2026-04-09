@@ -1,15 +1,6 @@
-<<<<<<< HEAD
 Flask>=2.0
 gspread>=5.0
 oauth2client>=4.0
 pyautogui
 Pillow
 pyperclip
-=======
-Flask>=2.0
-gspread>=5.0
-oauth2client>=4.0
-pyautogui
-Pillow
-pyperclip
->>>>>>> a2c8492483ee7245b6928a24900d17788b671f95
