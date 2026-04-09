@@ -1,7 +1,7 @@
 # TODO: Versão bilíngue PT/EN
 
 ## Objetivo
-Implementar suporte a português e inglês no sistema, com opção de troca de idioma na interface e comentários de código em ambos os idiomas. Cada etapa deve ser pequena para gerar vários commits e manter o histórico ativo.
+Implementar suporte a português e inglês no sistema, com opção de troca de idioma na interface e comentários de código em ambos os idiomas.
 
 ## Plano diário
 - [ ] Dia 1: Criar infraestrutura de tradução
@@ -43,7 +43,3 @@ Implementar suporte a português e inglês no sistema, com opção de troca de i
   - Atualizar `README.md` com instruções em PT e EN
   - Testar troca de idioma e corrigir pequenos detalhes
   - Commit: `docs: update README and polish language support`
-
-## Observação
-Vou seguir esse plano e fazer as alterações ao longo dos próximos dias. Quando você vier pedir a alteração do dia, eu aplico o passo correspondente e faço o commit local para você revisar.
-
